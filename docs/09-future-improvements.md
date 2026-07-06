@@ -41,6 +41,7 @@
 **อนาคต:** สร้าง thumbnail/variant หลายขนาด, validate/บีบอัด, จัดการลบไฟล์เก่าเมื่อเปลี่ยนรูป
 
 ## G. ความปลอดภัย & คุณภาพ
+- **Order action idempotency guards** (พบตอน M4): `OrdersPage::cancelOrder()` ยังไม่กันสถานะ → กดยกเลิกซ้ำจะ **restock ซ้ำ + คืนคูปองซ้ำ**; `refundOrder()` กดซ้ำเขียน refund log ซ้ำ ควรเพิ่ม guard (ยกเลิก/refund ได้เฉพาะสถานะที่เหมาะสม + กันทำซ้ำ) และครอบ cancel ทั้งก้อนใน transaction (ตอนนี้ restock หลายสินค้าไม่ atomic รวมกัน)
 - **Admin self-lockout guard** (พบตอน M1): `AdminAccountsPage::setStatus()` ยังไม่กันเคส super ปิดบัญชีตัวเอง หรือปิด/ถอด super คนสุดท้าย → อาจล็อกตัวเองออกจากระบบ ควรเพิ่ม guard (ห้ามปิดตัวเอง + ต้องเหลือ active super ≥ 1)
 - **2FA** สำหรับ admin login
 - **เปิด verify HMAC signature ของ HAL webhook กลับ** (ตอนนี้ bypass อยู่ — ดู [06-open-questions.md](06-open-questions.md))
