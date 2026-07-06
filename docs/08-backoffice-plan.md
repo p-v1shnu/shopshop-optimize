@@ -61,21 +61,23 @@
 - Seeder สร้างแอดมินใหญ่คนแรก (bootstrap)
 - v1 ยังไม่ทำ 2FA (บันทึกเป็น backlog)
 
-## 5. ภาษา UI (i18n)
-- **2 ภาษา: อังกฤษเป็นหลัก, ไทยเป็นรอง** (ต่างจากหน้าร้านลูกค้าที่เป็นภาษาลาว)
-- ใช้ Laravel localization (`lang/en`, `lang/th`) + ตัวสลับภาษาในหลังบ้าน
-- ค่าเริ่มต้น locale ของ admin = `en`
+## 5. ภาษา UI
+- **v1: อังกฤษอย่างเดียว** (เพื่อประหยัดเวลา/token ตอนพัฒนา — ต่างจากหน้าร้านลูกค้าที่เป็นภาษาลาว)
+- ยังไม่ทำ i18n switcher; เขียน string อังกฤษไปก่อน
+- ถ้าอนาคตต้องการไทยด้วย ค่อยเพิ่ม Laravel localization (`lang/en`, `lang/th`) ทีหลัง
 
 ## 6. Storage รูปภาพ (สร้างใหม่ — ของเดิมไม่มี)
 
 **ผลตรวจสอบ:** โค้ดปัจจุบัน**ไม่มีระบบอัปโหลดรูป** — เก็บเป็น URL ชี้ไป `https://assets.shopshop.la/...` (ไม่มี `config/filesystems.php`, ไม่มี env AWS/S3, ไม่มีโค้ด Storage/S3; `aws-sdk-php` เป็นแค่ suggested dep ไม่ได้ติดตั้งจริง)
 
-**แผน:** เพิ่มระบบอัปโหลดผ่าน Laravel filesystem abstraction แบบ **disk เดียว สลับด้วย env**
-- publish `config/filesystems.php` + เพิ่ม disk `s3`
-- **Local dev = MinIO** (S3-compatible) — เพิ่ม service ใน docker-compose หรือใช้ที่มีอยู่ → โค้ดชุดเดียวกับ prod
-- **Production = AWS S3** (bucket หลัง `assets.shopshop.la`) — เปลี่ยนแค่ env (`FILESYSTEM_DISK=s3`, `AWS_*`)
-- โค้ดใช้ `Storage::disk(config('filesystems.default'))->put(...)` แล้วเก็บ public URL ลง field `images`/`*_url` (คงรูปแบบ URL เดิมไว้ ให้หน้าร้านทำงานได้เหมือนเดิม)
-- ต้องยืนยันกับทีม infra ภายหลังว่า `assets.shopshop.la` prod หลังบ้านคือ S3 bucket ไหน (region/bucket/CDN)
+**Production ใช้ Cloudflare R2** — ยืนยันแล้วจากหน้า 404 ของ `assets.shopshop.la` (เป็น error page ของ Cloudflare R2 public bucket) สอดคล้องกับที่โปรเจคใช้ Cloudflare อยู่แล้ว (`CLOUDFLARE_API_TOKEN`, flush cache) **R2 เป็น S3-compatible** จึงใช้ S3 driver ได้ แค่ชี้ endpoint ไป R2
+
+**แผน:** เพิ่มระบบอัปโหลดผ่าน Laravel filesystem abstraction แบบ **disk เดียว สลับด้วย env** (ทุกที่เป็น S3-compatible)
+- publish `config/filesystems.php` + เพิ่ม disk `s3` (รองรับ custom `AWS_ENDPOINT` + `AWS_URL` สำหรับ R2/MinIO)
+- **Local dev = MinIO** (S3-compatible) — เพิ่ม service ใน docker-compose → โค้ดชุดเดียวกับ prod
+- **Production = Cloudflare R2** — เปลี่ยนแค่ env: `FILESYSTEM_DISK=s3`, `AWS_ENDPOINT=https://<account>.r2.cloudflarestorage.com`, `AWS_URL=https://assets.shopshop.la`, `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`, `AWS_BUCKET`, `AWS_DEFAULT_REGION=auto`
+- โค้ดใช้ `Storage::disk(...)->put(...)` แล้วเก็บ public URL (รูปแบบ `https://assets.shopshop.la/...`) ลง field `images`/`*_url` — คงรูปแบบ URL เดิมไว้ ให้หน้าร้านทำงานเหมือนเดิม
+- ต้องขอจากทีม infra: R2 account id / bucket name / access key สำหรับ prod
 
 ## 7. Tech stack ของหลังบ้าน
 - **Custom Livewire 4** (stack เดียวกับหน้าร้าน) — ไม่ใช้ Filament เพราะ Filament เดิมผูกกับ Livewire 3 อาจไม่เข้ากับ Livewire 4.3 ที่โปรเจคใช้ และเลี่ยงความเสี่ยง dependency
@@ -123,12 +125,12 @@
 | URL | subdomain — local `admin.shopshop.test:8899`, prod `admin.shopshop.la` |
 | Roles | 2 ระดับ: `super` (ทุกร้าน) + `shop` (ร้านตัวเอง); staff ละเอียดไว้ทีหลัง |
 | แอดมิน/ร้าน | v1: shop-admin 1 คน = 1 ร้าน (extend เป็น pivot ทีหลัง) |
-| ภาษา UI | 2 ภาษา: อังกฤษหลัก + ไทยรอง |
-| Storage รูป | สร้างใหม่; local=MinIO, prod=AWS S3, สลับด้วย env (ของเดิมเก็บ URL ไป assets.shopshop.la ไม่มี upload) |
+| ภาษา UI | v1 อังกฤษอย่างเดียว (ประหยัด token; เพิ่มไทยทีหลังได้) |
+| Storage รูป | สร้างใหม่; local=MinIO, **prod=Cloudflare R2** (ยืนยันแล้ว, S3-compatible), สลับด้วย env |
 | ลำดับทำ | 3.0 → 3.1 → 3.2 → 3.3 (ที่เหลือตามมา) |
 
 ## 10. งานที่ต้องยืนยัน/ตรวจเพิ่มก่อน/ระหว่างทำ
-- infra ของ `assets.shopshop.la` บน production คือ S3 bucket/region/CDN อะไร (สำหรับตั้ง env prod)
+- ~~infra ของ `assets.shopshop.la`~~ → **ยืนยันแล้ว = Cloudflare R2** เหลือขอ account id / bucket / access key สำหรับตั้ง env prod
 - บัญชีแอดมินใหญ่ชุดแรก (email/password) จะใช้ของใคร
 - การ "คืนเงิน" ออเดอร์ — BCEL/JDB มี API refund ไหม หรือทำแค่ mark สถานะ + คืนเงินเองนอกระบบ (Phase 3.3 จะทำแค่ cancel + คืนสต็อก/คูปองก่อน)
 - ต้องมี audit log ของ action ในหลังบ้านไหม (backlog)
