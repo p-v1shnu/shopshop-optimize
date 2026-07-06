@@ -41,7 +41,17 @@ docker compose exec app php artisan ...                # run any artisan cmd
 - Phase order: 3.0 foundation (auth/layout/tenant-scope) → 3.1 de-hardcode → 3.2 products+stock → 3.3 orders.
 - Image storage: build new upload via S3 driver — local **MinIO**, prod **Cloudflare R2** (`assets.shopshop.la`), env-switchable.
 
+## Reading order before writing code
+1. This file (AGENTS.md) — conventions & gotchas
+2. [`docs/10-prd-backoffice.md`](docs/10-prd-backoffice.md) — **what to build + acceptance criteria** (the definition of done)
+3. [`docs/08-backoffice-plan.md`](docs/08-backoffice-plan.md) — how to build it (architecture, data model, tenant scoping, storage)
+4. [`docs/09-future-improvements.md`](docs/09-future-improvements.md) — what NOT to do in v1 (stay in scope)
+5. [`docs/01`–`05`](docs/) — how the existing system works (models, tenancy, integrations) — read the parts you're touching
+
+Implement **one PRD module at a time** (M0 → M1 → …); treat each module's acceptance criteria as the pass/fail bar.
+
 ## Working agreement
 - **Docs sync:** edit `AGENTS.md` only; `CLAUDE.md` imports it. Keep this file current when conventions/decisions change.
 - Do substantial admin work on a **feature branch**, small commits, to ease later merge with the outsourced dev's source.
 - Run/verify changes in the Docker stack before saying they work.
+- **v1 = schema-minimal** (see docs/08 §1.1): only new table is `admins`; don't alter existing tables/enums.
