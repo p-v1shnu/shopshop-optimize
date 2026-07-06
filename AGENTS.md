@@ -52,6 +52,6 @@ Implement **one PRD module at a time** (M0 → M1 → …); treat each module's 
 
 ## Working agreement
 - **Docs sync:** edit `AGENTS.md` only; `CLAUDE.md` imports it. Keep this file current when conventions/decisions change.
-- Do substantial admin work on a **feature branch**, small commits, to ease later merge with the outsourced dev's source.
+- **All Phase 3 (backoffice) work stays on the single branch `feat/admin-m0`** — do NOT create a new branch per module, and do NOT merge to `main` until the user asks. Make small, focused commits per step.
 - Run/verify changes in the Docker stack before saying they work.
 - **v1 = schema-minimal** (see docs/08 §1.1): only new table is `admins`; don't alter existing tables/enums.
