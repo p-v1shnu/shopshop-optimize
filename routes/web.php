@@ -6,6 +6,7 @@ use App\Http\Middleware\SetAdminCurrentShop;
 use App\Livewire\Admin\AdminAccountsPage;
 use App\Livewire\Admin\DashboardPage;
 use App\Livewire\Admin\LoginPage;
+use App\Livewire\Admin\ProductsPage;
 use App\Livewire\Admin\SettingsPage;
 use App\Models\Tenant;
 use App\Support\AdminTenantScope;
@@ -28,6 +29,7 @@ Route::domain($adminDomain)->middleware('web')->group(function () {
         SetAdminCurrentShop::class,
     ])->group(function () {
         Route::livewire('/admin', DashboardPage::class)->name('admin.dashboard');
+        Route::livewire('/admin/products', ProductsPage::class)->name('admin.products');
         Route::livewire('/admin/settings', SettingsPage::class)->name('admin.settings');
 
         Route::middleware(EnsureSuperAdmin::class)->group(function () {
