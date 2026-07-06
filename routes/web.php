@@ -1,6 +1,78 @@
 <?php
 
+use App\Http\Middleware\AuthenticateAdmin;
+use App\Http\Middleware\SetAdminCurrentShop;
+use App\Livewire\Admin\DashboardPage;
+use App\Livewire\Admin\LoginPage;
 use App\Models\Tenant;
+use App\Support\AdminTenantScope;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+$adminDomain = 'admin.'.parse_url(config('app.url'), PHP_URL_HOST);
+
+Route::domain($adminDomain)->middleware('web')->group(function () {
+    Route::redirect('/', '/admin');
+
+    Route::middleware('guest:admin')->group(function () {
+        Route::livewire('/admin/login', LoginPage::class)->name('admin.login');
+
+        Route::post('/admin/login', function (Request $request) {
+            $credentials = $request->validate([
+                'email' => ['required', 'email'],
+                'password' => ['required', 'string'],
+            ]);
+
+            $credentials['status'] = 'active';
+
+            if (! Auth::guard('admin')->attempt($credentials)) {
+                return back()->withErrors([
+                    'email' => 'These credentials do not match our records.',
+                ])->onlyInput('email');
+            }
+
+            $request->session()->regenerate();
+            Auth::guard('admin')->user()->forceFill([
+                'last_login_at' => now(),
+            ])->save();
+
+            return redirect()->intended(route('admin.dashboard'));
+        });
+    });
+
+    Route::middleware([
+        AuthenticateAdmin::class.':admin',
+        SetAdminCurrentShop::class,
+    ])->group(function () {
+        Route::livewire('/admin', DashboardPage::class)->name('admin.dashboard');
+
+        Route::post('/admin/current-shop', function (Request $request) {
+            $admin = Auth::guard('admin')->user();
+
+            if (! $admin?->isSuper()) {
+                return response('', 403);
+            }
+
+            $validated = $request->validate([
+                'tenant_id' => ['required', 'string', 'exists:tenants,id'],
+            ]);
+
+            $request->session()->put(AdminTenantScope::SESSION_KEY, $validated['tenant_id']);
+
+            return redirect()->route('admin.dashboard');
+        })->name('admin.current-shop.update');
+
+        Route::post('/admin/logout', function (Request $request) {
+            Auth::guard('admin')->logout();
+
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('admin.login');
+        })->name('admin.logout');
+    });
+});
 
 foreach (config('tenancy.central_domains') as $domain) {
     Route::domain($domain)->group(function () {
