@@ -9,6 +9,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(ShopSeeder::class);
+        $this->call(AdminSeeder::class);
 
          if (app()->environment('local')) {
             $this->call(UserSeeder::class);

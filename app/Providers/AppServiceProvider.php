@@ -22,9 +22,9 @@ class AppServiceProvider extends ServiceProvider
 
         DB::prohibitDestructiveCommands(config('custom.db_enable_migration') !== true);
 
-        // Force HTTPS everywhere except local development (so the app runs over
-        // plain HTTP in Docker/localhost without breaking asset & Livewire URLs).
-        if (! $this->app->environment('local')) {
+        // Force HTTPS everywhere except local/test development (so the app runs
+        // over plain HTTP in Docker/localhost without breaking asset & Livewire URLs).
+        if (! $this->app->environment(['local', 'testing'])) {
             resolve(UrlGenerator::class)->forceScheme('https');
         }
 
