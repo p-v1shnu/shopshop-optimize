@@ -47,6 +47,10 @@ docker compose run --rm node sh -c "npm install && npm run build"
 - ร้านตัวอย่าง: http://gadzila.shopshop.test:8899/shop , http://babybright.shopshop.test:8899/shop , http://muanson.shopshop.test:8899/shop
 - Central: http://shopshop.test:8899
 
+> ⚠️ **ต้องใส่ `:8899` ต่อท้าย domain เสมอ** — เว็บรันที่ port 8899 ไม่ใช่ 80
+> ถ้าพิมพ์แค่ `babybright.shopshop.test` (ไม่มี port) เบราว์เซอร์จะลองต่อ port 80 แล้วได้ **`ERR_CONNECTION_REFUSED`**
+> (ถ้าอยากใช้ URL แบบไม่มี port ให้แก้ port mapping ของ service `web` ใน `docker-compose.yml` เป็น `"127.0.0.1:80:80"` โดยต้องมั่นใจว่า port 80 ในเครื่องว่าง)
+
 ## การใช้งานประจำวัน
 
 ```bash
