@@ -41,6 +41,7 @@
 **อนาคต:** สร้าง thumbnail/variant หลายขนาด, validate/บีบอัด, จัดการลบไฟล์เก่าเมื่อเปลี่ยนรูป
 
 ## G. ความปลอดภัย & คุณภาพ
+- **Admin self-lockout guard** (พบตอน M1): `AdminAccountsPage::setStatus()` ยังไม่กันเคส super ปิดบัญชีตัวเอง หรือปิด/ถอด super คนสุดท้าย → อาจล็อกตัวเองออกจากระบบ ควรเพิ่ม guard (ห้ามปิดตัวเอง + ต้องเหลือ active super ≥ 1)
 - **2FA** สำหรับ admin login
 - **เปิด verify HMAC signature ของ HAL webhook กลับ** (ตอนนี้ bypass อยู่ — ดู [06-open-questions.md](06-open-questions.md))
 - **เริ่มเขียน test** (ยังไม่มีโฟลเดอร์ `tests/` เลย) — เริ่มจากส่วนที่แตะบ่อย (order, stock, refund)
