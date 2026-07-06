@@ -49,6 +49,10 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'latitude',
         'longitude',
         'title',
+        'shop_closed_at',
+        'campaign_code',
+        'campaign_starts_at',
+        'campaign_ends_at',
         'created_at',
         'updated_at',
     ];
@@ -64,6 +68,9 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'maintenance_mode'       => 'boolean',
             'allow_province_ids'     => 'array',
             'shipping_channels'      => 'array',
+            'shop_closed_at'         => 'datetime',
+            'campaign_starts_at'     => 'datetime',
+            'campaign_ends_at'       => 'datetime',
             'created_at'             => 'datetime',
             'updated_at'             => 'datetime',
         ];

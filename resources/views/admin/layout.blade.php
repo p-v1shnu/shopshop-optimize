@@ -23,6 +23,9 @@
           <a href="{{ route('admin.dashboard') }}" class="block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
             Dashboard
           </a>
+          <a href="{{ route('admin.settings') }}" class="block rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+            Settings
+          </a>
           @if (auth('admin')->user()?->isSuper())
             <a href="{{ route('admin.admin-accounts') }}" class="block rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
               Admin accounts
