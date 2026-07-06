@@ -36,6 +36,7 @@
 5. **[05-infrastructure-deployment.md](05-infrastructure-deployment.md)** — providers, console commands (scheduler), workers, PM2, build, deploy
 6. **[06-open-questions.md](06-open-questions.md)** — คำถาม/ข้อควรตรวจสอบก่อนทำงานต่อ
 7. **[07-local-docker.md](07-local-docker.md)** — วิธีรันในเครื่องด้วย Docker (แนะนำเริ่มที่นี่)
+8. **[08-backoffice-plan.md](08-backoffice-plan.md)** — แผนสร้างระบบหลังบ้าน (admin) — ยังไม่ลงโค้ด
 
 ## Quick Start (สำหรับ dev ที่รับช่วงต่อ)
 
