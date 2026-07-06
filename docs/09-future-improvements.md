@@ -47,6 +47,9 @@
 - **เริ่มเขียน test** (ยังไม่มีโฟลเดอร์ `tests/` เลย) — เริ่มจากส่วนที่แตะบ่อย (order, stock, refund)
 - ทบทวน migration ต้นฉบับที่ไม่ portable (เจอแล้ว 1 จุด: boolean default string — แก้ไปแล้ว) เผื่อมีอีก
 
+## G.1 Deprecation ที่เจอ (pre-existing)
+- stancl/tenancy 3.10 บน PHP 8.4 ขึ้น deprecation: *"Accessing static trait property `BelongsToTenant::$tenantIdColumn` is deprecated"* (มาจากทุก model ที่ใช้ trait นี้ เช่น User, ShopProduct — มีมาตั้งแต่ baseline) ควรจัดการตอน upgrade stancl เวอร์ชันถัดไป
+
 ## H. โครงสร้าง tenancy
 - ปัจจุบันเป็น single-database + `tenant_id` column (ไม่ใช่ database-per-tenant) — ถ้าจำนวนร้าน/ข้อมูลโตมาก อาจพิจารณาแยก database ต่อ tenant (stancl รองรับ) แต่เป็นงานใหญ่ ประเมินตอนสเกลจริง
 
