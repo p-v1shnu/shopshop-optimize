@@ -38,6 +38,7 @@
 7. **[07-local-docker.md](07-local-docker.md)** — วิธีรันในเครื่องด้วย Docker (แนะนำเริ่มที่นี่)
 8. **[08-backoffice-plan.md](08-backoffice-plan.md)** — แผนสร้างระบบหลังบ้าน (admin) — ยังไม่ลงโค้ด
 9. **[09-future-improvements.md](09-future-improvements.md)** — แผนปรับปรุงอนาคต (สิ่งที่เลื่อนจาก v1)
+10. **[10-prd-backoffice.md](10-prd-backoffice.md)** — PRD (lean) ของ backoffice v1: user stories + acceptance criteria
 
 ## Quick Start (สำหรับ dev ที่รับช่วงต่อ)
 

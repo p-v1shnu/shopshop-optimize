@@ -34,7 +34,7 @@ docker compose exec app php artisan ...                # run any artisan cmd
 - `.env` and RSA keys are gitignored — never commit secrets.
 
 ## Current focus — Phase 3: build the backoffice (admin)
-Plan (approved, **not yet coded**): [`docs/08-backoffice-plan.md`](docs/08-backoffice-plan.md). Deferred/tech-debt: [`docs/09-future-improvements.md`](docs/09-future-improvements.md).
+**Spec / acceptance criteria:** [`docs/10-prd-backoffice.md`](docs/10-prd-backoffice.md) (lean PRD — the source of "what/done"). Architecture: [`docs/08-backoffice-plan.md`](docs/08-backoffice-plan.md). Deferred/tech-debt: [`docs/09-future-improvements.md`](docs/09-future-improvements.md).
 - **One unified admin app, single login** on central domain (`admin.shopshop.la`); role decides scope: `super` (all brands) vs `shop` (own shop only).
 - Tech: **custom Livewire 4** (not Filament). Admin UI **English only** in v1.
 - **v1 keeps schema changes minimal** — only new additive table is `admins`; de-hardcode into `tenants.data` (JSON); refund uses existing `refunded` status + `shop_order_logs`. Anything needing real schema changes → `docs/09`.
