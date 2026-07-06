@@ -1,0 +1,45 @@
+@font-face {
+    font-family: 'Noto Sans';
+    src: local('Noto Sans Bold'), local('NotoSans-Bold'),
+        url('subset-NotoSans-Bold.woff2') format('woff2'),
+        url('subset-NotoSans-Bold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Noto Sans';
+    src: local('Noto Sans Medium'), local('NotoSans-Medium'),
+        url('subset-NotoSans-Medium.woff2') format('woff2'),
+        url('subset-NotoSans-Medium.woff') format('woff');
+    font-weight: 500;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Noto Sans';
+    src: local('Noto Sans SemiBold'), local('NotoSans-SemiBold'),
+        url('subset-NotoSans-SemiBold.woff2') format('woff2'),
+        url('subset-NotoSans-SemiBold.woff') format('woff');
+    font-weight: 600;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Noto Sans';
+    src: local('Noto Sans Light'), local('NotoSans-Light'),
+        url('subset-NotoSans-Light.woff2') format('woff2'),
+        url('subset-NotoSans-Light.woff') format('woff');
+    font-weight: 300;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Noto Sans';
+    src: local('Noto Sans Regular'), local('NotoSans-Regular'),
+        url('subset-NotoSans-Regular.woff2') format('woff2'),
+        url('subset-NotoSans-Regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+

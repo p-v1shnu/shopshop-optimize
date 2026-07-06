@@ -1,0 +1,45 @@
+@font-face {
+    font-family: 'Noto Sans Lao';
+    src: local('Noto Sans Lao Medium'), local('NotoSansLao-Medium'),
+        url('subset-NotoSansLao-Medium.woff2') format('woff2'),
+        url('subset-NotoSansLao-Medium.woff') format('woff');
+    font-weight: 500;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Noto Sans Lao';
+    src: local('Noto Sans Lao Light'), local('NotoSansLao-Light'),
+        url('subset-NotoSansLao-Light.woff2') format('woff2'),
+        url('subset-NotoSansLao-Light.woff') format('woff');
+    font-weight: 300;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Noto Sans Lao';
+    src: local('Noto Sans Lao Regular'), local('NotoSansLao-Regular'),
+        url('subset-NotoSansLao-Regular.woff2') format('woff2'),
+        url('subset-NotoSansLao-Regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Noto Sans Lao';
+    src: local('Noto Sans Lao SemiBold'), local('NotoSansLao-SemiBold'),
+        url('subset-NotoSansLao-SemiBold.woff2') format('woff2'),
+        url('subset-NotoSansLao-SemiBold.woff') format('woff');
+    font-weight: 600;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Noto Sans Lao';
+    src: local('Noto Sans Lao Bold'), local('NotoSansLao-Bold'),
+        url('subset-NotoSansLao-Bold.woff2') format('woff2'),
+        url('subset-NotoSansLao-Bold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+}
+
