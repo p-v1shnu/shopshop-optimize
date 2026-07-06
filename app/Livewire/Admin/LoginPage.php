@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 use Livewire\Component;
 
 class LoginPage extends Component
@@ -26,7 +27,7 @@ class LoginPage extends Component
             return null;
         }
 
-        request()->session()->regenerate();
+        Session::regenerate();
         Auth::guard('admin')->user()->forceFill([
             'last_login_at' => now(),
         ])->save();

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Admin\LoginPage;
 use App\Models\Admin;
 use App\Models\ShopProduct;
 use App\Models\Tenant;
@@ -9,6 +10,7 @@ use App\Support\AdminTenantScope;
 use Database\Seeders\AdminSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class AdminM0Test extends TestCase
@@ -48,10 +50,15 @@ class AdminM0Test extends TestCase
             'status' => 'active',
         ]);
 
-        $this->post('http://admin.shopshop.test/admin/login', [
-            'email' => $admin->email,
-            'password' => 'password',
-        ])->assertRedirect('http://admin.shopshop.test/admin');
+        // Login through the LoginPage Livewire component (the real login path).
+        Livewire::test(LoginPage::class)
+            ->set('email', $admin->email)
+            ->set('password', 'password')
+            ->call('login')
+            ->assertRedirect(route('admin.dashboard'));
+
+        // Ensure the following HTTP requests run as this authenticated admin.
+        $this->actingAs($admin, 'admin');
 
         $this->get('http://admin.shopshop.test/admin')
             ->assertOk()

@@ -16,29 +16,8 @@ Route::domain($adminDomain)->middleware('web')->group(function () {
     Route::redirect('/', '/admin');
 
     Route::middleware('guest:admin')->group(function () {
+        // Login is handled by the LoginPage Livewire component (LoginPage::login()).
         Route::livewire('/admin/login', LoginPage::class)->name('admin.login');
-
-        Route::post('/admin/login', function (Request $request) {
-            $credentials = $request->validate([
-                'email' => ['required', 'email'],
-                'password' => ['required', 'string'],
-            ]);
-
-            $credentials['status'] = 'active';
-
-            if (! Auth::guard('admin')->attempt($credentials)) {
-                return back()->withErrors([
-                    'email' => 'These credentials do not match our records.',
-                ])->onlyInput('email');
-            }
-
-            $request->session()->regenerate();
-            Auth::guard('admin')->user()->forceFill([
-                'last_login_at' => now(),
-            ])->save();
-
-            return redirect()->intended(route('admin.dashboard'));
-        });
     });
 
     Route::middleware([
