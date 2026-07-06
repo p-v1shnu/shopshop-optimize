@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Middleware\AuthenticateAdmin;
+use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\SetAdminCurrentShop;
+use App\Livewire\Admin\AdminAccountsPage;
 use App\Livewire\Admin\DashboardPage;
 use App\Livewire\Admin\LoginPage;
 use App\Models\Tenant;
@@ -25,6 +27,10 @@ Route::domain($adminDomain)->middleware('web')->group(function () {
         SetAdminCurrentShop::class,
     ])->group(function () {
         Route::livewire('/admin', DashboardPage::class)->name('admin.dashboard');
+
+        Route::middleware(EnsureSuperAdmin::class)->group(function () {
+            Route::livewire('/admin/admin-accounts', AdminAccountsPage::class)->name('admin.admin-accounts');
+        });
 
         Route::post('/admin/current-shop', function (Request $request) {
             $admin = Auth::guard('admin')->user();

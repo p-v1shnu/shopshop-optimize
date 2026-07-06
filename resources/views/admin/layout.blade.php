@@ -24,7 +24,9 @@
             Dashboard
           </a>
           @if (auth('admin')->user()?->isSuper())
-            <div class="px-4 py-2 text-sm text-slate-500">Admin accounts</div>
+            <a href="{{ route('admin.admin-accounts') }}" class="block rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+              Admin accounts
+            </a>
           @endif
         </nav>
       </aside>
