@@ -10,6 +10,15 @@
 2. ให้เจ้าของร้านจัดการสินค้า/สต็อก/ออเดอร์/คูปอง/ค่าส่งของตัวเองได้
 3. ให้ BIZGITAL (แอดมินใหญ่) สร้าง/จัดการ brand ทุกร้านได้
 
+## 1.1 หลักการ v1: แก้ schema ให้น้อยที่สุด (อิงของเดิม)
+
+v1 ยึด **"ไม่แก้โครงสร้างข้อมูลเดิม"** ให้มากที่สุด เพื่อลดความเสี่ยงตอน merge กับ source ของ outsource dev และให้ใช้งานได้เร็ว:
+- **ตารางใหม่ที่เพิ่ม = `admins` เท่านั้น** (additive, จำเป็นสำหรับ login แยก — ไม่กระทบตารางเดิม)
+- **ไม่แก้ enum/คอลัมน์ของตารางเดิม** ใน v1
+- **De-hardcode** → เก็บค่าใหม่ (วันปิดร้าน/campaign) ลง **`tenants.data` (JSON virtual attribute ของ stancl)** → ไม่ต้อง migration
+- **Refund** → ใช้สถานะ `refunded` ที่มีอยู่ + เก็บเลข ref ธนาคารลง **`shop_order_logs`** (ตาราง audit ที่มีอยู่) → ไม่ต้อง migration
+- สิ่งที่ต้องแก้ schema จริง ๆ (refund state machine, refund payment-type, คอลัมน์เฉพาะ ฯลฯ) → **ยกไปเอกสารแยก [09-future-improvements.md](09-future-improvements.md)**
+
 ## 2. สถาปัตยกรรม: ระบบ admin เดียว + login เดียว
 
 **ไม่แยก admin ตาม domain ของร้าน** — เป็นแอปแอดมิน**ระบบเดียว มีหน้า login เดียว** สิทธิ์ของบัญชีที่ login เป็นตัวกำหนดสิ่งที่เห็น/ทำได้
@@ -95,8 +104,8 @@
 - dashboard เปล่า
 - routing บน subdomain `admin.` (local: `admin.shopshop.test:8899`)
 
-**Phase 3.1 — เก็บ hardcode → settings**
-- ย้าย `ShopUtil` วันปิดร้าน (`2030-01-30 18:00:00`) + campaign codes (chinese/lao new year, 06_06) → tenant setting/config
+**Phase 3.1 — เก็บ hardcode → settings** (ไม่ต้อง migration)
+- ย้าย `ShopUtil` วันปิดร้าน (`2030-01-30 18:00:00`) + campaign codes (chinese/lao new year, 06_06) → เก็บใน **`tenants.data`** (virtual attribute — เพิ่มใน `$fillable`/`casts` ของ Tenant model เท่านั้น ไม่แก้ schema)
 - หน้า Settings แก้ค่าต่อร้านได้ (เปิด-ปิดร้าน, วันปิด, campaign, ฯลฯ)
 
 **Phase 3.2 — สินค้า + สต็อก**
@@ -114,13 +123,11 @@
 #### การ refund (ไม่มี API — ทำ manual + เก็บหลักฐาน)
 Flow จริง: ลูกค้าขอคืน → แจ้งข้อมูล order ให้ธนาคาร → ธนาคาร refund → ธนาคารส่ง **CSV** (มีเลข reference) → นำ ref มาป้อนเก็บเป็นหลักฐาน
 
-สถานะที่มีในระบบ: `payment_status` มี `refunded` แล้ว **แต่ยังขาด** ที่เก็บเลข ref ธนาคาร, `refunded_at`, สถานะกลาง, และ type `refund` ใน `shop_order_payments`
+**v1 (schema-minimal — ไม่แก้ตารางเดิม):**
+- เปลี่ยน `payment_status` เป็น `refunded` (ค่าที่มีอยู่แล้วใน enum)
+- ป้อนเลข reference ธนาคาร + หมายเหตุ ด้วยมือ → บันทึกเป็นแถวใน **`shop_order_logs`** (type=`refund`, detail JSON เก็บ reference/วันที่/ผู้ทำ) → ใช้เป็นหลักฐาน ไม่ต้อง migration
 
-สิ่งที่ต้องเพิ่ม (migration เล็ก ๆ):
-- สถานะกลาง `refund_requested` ก่อน `refunded` (แจ้งธนาคารแล้วรออยู่) — เพิ่มใน enum หรือ field แยก `refund_status`
-- บันทึกการคืนเงินเป็นแถวใน `shop_order_payments` (เพิ่ม type `refund`: amount, เลข ref ธนาคารใน `ref`, หมายเหตุ/ไฟล์ใน `remark`/`response`, `reconciled_at`) + `refunded_at` ใน order
-- หน้า **import CSV จากธนาคาร** → จับคู่ order (payment ref / order code) → เขียน refund reference อัตโนมัติ
-- อ้างอิงรูปแบบจากโปรเจคขายบัตรเดิมของเจ้าของ (ถ้าเข้าถึงได้) เพื่อ reuse pattern ที่ใช้งานจริงแล้ว
+**ยกไปอนาคต ([09-future-improvements.md](09-future-improvements.md)):** สถานะกลาง `refund_requested`, refund payment-type + `refunded_at` เป็นคอลัมน์จริง, และหน้า **import CSV ธนาคารแบบ bulk** (จับคู่อัตโนมัติ) — อ้างอิง pattern จากโปรเจคขายบัตรเดิม
 
 ### 🔜 Phase ถัดไป (หลัง 4 อันแรก)
 - **Phase 3.4 — Platform super-admin:** สร้าง/แก้ tenant + domain, ตั้ง config รายร้าน (โลโก้/banner/facebook/analytics/shipping_channels/allow_province_ids/maintenance/พิกัด pickup) — แทน seeder

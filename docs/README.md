@@ -37,6 +37,7 @@
 6. **[06-open-questions.md](06-open-questions.md)** — คำถาม/ข้อควรตรวจสอบก่อนทำงานต่อ
 7. **[07-local-docker.md](07-local-docker.md)** — วิธีรันในเครื่องด้วย Docker (แนะนำเริ่มที่นี่)
 8. **[08-backoffice-plan.md](08-backoffice-plan.md)** — แผนสร้างระบบหลังบ้าน (admin) — ยังไม่ลงโค้ด
+9. **[09-future-improvements.md](09-future-improvements.md)** — แผนปรับปรุงอนาคต (สิ่งที่เลื่อนจาก v1)
 
 ## Quick Start (สำหรับ dev ที่รับช่วงต่อ)
 
