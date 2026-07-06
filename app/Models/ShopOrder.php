@@ -96,6 +96,11 @@ class ShopOrder extends Model
             ->where('type', '=', 'payment');
     }
 
+    public function logs(): HasMany
+    {
+        return $this->hasMany(ShopOrderLog::class);
+    }
+
     public function getShippingDiscountAttribute(): int
     {
         return 0;
