@@ -111,6 +111,17 @@
 - ส่ง invoice webhook ซ้ำ (ใช้ `SendInvoiceWebhook` logic)
 - ยกเลิก/คืนออเดอร์ → คืนสต็อก + คืนคูปอง (ใช้ logic แบบ `CleanUnPaidOrders`)
 
+#### การ refund (ไม่มี API — ทำ manual + เก็บหลักฐาน)
+Flow จริง: ลูกค้าขอคืน → แจ้งข้อมูล order ให้ธนาคาร → ธนาคาร refund → ธนาคารส่ง **CSV** (มีเลข reference) → นำ ref มาป้อนเก็บเป็นหลักฐาน
+
+สถานะที่มีในระบบ: `payment_status` มี `refunded` แล้ว **แต่ยังขาด** ที่เก็บเลข ref ธนาคาร, `refunded_at`, สถานะกลาง, และ type `refund` ใน `shop_order_payments`
+
+สิ่งที่ต้องเพิ่ม (migration เล็ก ๆ):
+- สถานะกลาง `refund_requested` ก่อน `refunded` (แจ้งธนาคารแล้วรออยู่) — เพิ่มใน enum หรือ field แยก `refund_status`
+- บันทึกการคืนเงินเป็นแถวใน `shop_order_payments` (เพิ่ม type `refund`: amount, เลข ref ธนาคารใน `ref`, หมายเหตุ/ไฟล์ใน `remark`/`response`, `reconciled_at`) + `refunded_at` ใน order
+- หน้า **import CSV จากธนาคาร** → จับคู่ order (payment ref / order code) → เขียน refund reference อัตโนมัติ
+- อ้างอิงรูปแบบจากโปรเจคขายบัตรเดิมของเจ้าของ (ถ้าเข้าถึงได้) เพื่อ reuse pattern ที่ใช้งานจริงแล้ว
+
 ### 🔜 Phase ถัดไป (หลัง 4 อันแรก)
 - **Phase 3.4 — Platform super-admin:** สร้าง/แก้ tenant + domain, ตั้ง config รายร้าน (โลโก้/banner/facebook/analytics/shipping_channels/allow_province_ids/maintenance/พิกัด pickup) — แทน seeder
 - **Phase 3.5 — คูปอง + กฎค่าส่ง + ลูกค้า:** CRUD คูปอง, กฎค่าส่ง (ระวัง trigger overlap `prevent_overlap_*`), จัดการลูกค้า (ban/unban)
@@ -131,6 +142,7 @@
 
 ## 10. งานที่ต้องยืนยัน/ตรวจเพิ่มก่อน/ระหว่างทำ
 - ~~infra ของ `assets.shopshop.la`~~ → **ยืนยันแล้ว = Cloudflare R2** เหลือขอ account id / bucket / access key สำหรับตั้ง env prod
-- บัญชีแอดมินใหญ่ชุดแรก (email/password) จะใช้ของใคร
-- การ "คืนเงิน" ออเดอร์ — BCEL/JDB มี API refund ไหม หรือทำแค่ mark สถานะ + คืนเงินเองนอกระบบ (Phase 3.3 จะทำแค่ cancel + คืนสต็อก/คูปองก่อน)
+- ~~บัญชีแอดมินใหญ่ชุดแรก~~ → **`pele@bizgital.com`** (super-admin, seed ใน Phase 3.0)
+- ~~BCEL/JDB มี API refund ไหม~~ → **ไม่มี** ทำ manual: แจ้งธนาคาร → ธนาคาร refund + ส่ง CSV เลข ref → import เก็บหลักฐาน (ดู Phase 3.3)
+- ขอเข้าถึงโปรเจคขายบัตรเดิมของเจ้าของ (order/refund schema + CSV import) เพื่อ reuse pattern — path/repo?
 - ต้องมี audit log ของ action ในหลังบ้านไหม (backlog)
