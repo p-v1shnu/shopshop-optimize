@@ -35,6 +35,7 @@
 4. **[04-integrations.md](04-integrations.md)** — การเชื่อมต่อภายนอก: payment (BCEL/JDB), shipping (HAL), SMS/OTP, signature, Cloudflare
 5. **[05-infrastructure-deployment.md](05-infrastructure-deployment.md)** — providers, console commands (scheduler), workers, PM2, build, deploy
 6. **[06-open-questions.md](06-open-questions.md)** — คำถาม/ข้อควรตรวจสอบก่อนทำงานต่อ
+7. **[07-local-docker.md](07-local-docker.md)** — วิธีรันในเครื่องด้วย Docker (แนะนำเริ่มที่นี่)
 
 ## Quick Start (สำหรับ dev ที่รับช่วงต่อ)
 

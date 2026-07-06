@@ -1,0 +1,104 @@
+# ShopShop local development stack.
+# Host ports are deliberately uncommon to avoid clashing with other Docker
+# projects on this machine:
+#   8899  -> web (nginx)      | 33066 -> mysql
+#   63799 -> redis            | 5199  -> vite dev server (optional)
+# All ports bind to 127.0.0.1 only (not exposed on the network).
+
+name: shopshop
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: shopshop-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+      # vendor/ lives on a fast named volume, NOT the (very slow) Windows/OneDrive
+      # bind mount — otherwise PHP stats ~11k files per request and each page
+      # takes ~9s. This is the key performance fix for Docker-on-Windows here.
+      - vendor:/var/www/html/vendor
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/zz-shopshop.ini:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - shopshop
+
+  web:
+    image: nginx:1.27-alpine
+    container_name: shopshop-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8899:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    networks:
+      - shopshop
+
+  mysql:
+    image: mysql:8.0
+    container_name: shopshop-mysql
+    restart: unless-stopped
+    # Allow creating triggers/stored procedures without SUPER while binary
+    # logging is on (migration 0006 defines triggers + a stored procedure).
+    command: --log-bin-trust-function-creators=1
+    ports:
+      - "127.0.0.1:33066:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: shopshop
+      MYSQL_USER: shopshop
+      MYSQL_PASSWORD: secret
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - shopshop
+
+  redis:
+    image: redis:7-alpine
+    container_name: shopshop-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:63799:6379"
+    networks:
+      - shopshop
+
+  # Optional: Vite dev server for hot-reloading assets during development.
+  # Start with:  docker compose --profile dev up node
+  # For a one-off production build:  docker compose run --rm node npm run build
+  node:
+    image: node:22
+    container_name: shopshop-node
+    profiles: ["dev"]
+    working_dir: /var/www/html
+    ports:
+      - "127.0.0.1:5199:5199"
+    volumes:
+      - .:/var/www/html
+      - node_modules:/var/www/html/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5199"
+    networks:
+      - shopshop
+
+volumes:
+  mysql-data:
+  vendor:
+  node_modules:
+
+networks:
+  shopshop:
+    driver: bridge

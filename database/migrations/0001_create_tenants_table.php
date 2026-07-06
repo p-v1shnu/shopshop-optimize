@@ -12,8 +12,8 @@ return new class extends Migration
             $table->string('id')->primary();
             $table->string('name', 255)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active')->index();
-            $table->boolean('enable_shop')->default('true')->nullable();
-            $table->boolean('enable_coupon')->default('false')->nullable();
+            $table->boolean('enable_shop')->default(true)->nullable();
+            $table->boolean('enable_coupon')->default(false)->nullable();
             $table->string('order_invoice_webhook_url', 255)->nullable();
             $table->string('site_logo_url', 255)->nullable();
             $table->string('facebook_name', 255)->nullable();
