@@ -10,6 +10,7 @@ use App\Livewire\Admin\LoginPage;
 use App\Livewire\Admin\OrdersPage;
 use App\Livewire\Admin\ProductsPage;
 use App\Livewire\Admin\SettingsPage;
+use App\Livewire\Admin\ShippingRulesPage;
 use App\Models\Tenant;
 use App\Support\AdminTenantScope;
 use Illuminate\Http\Request;
@@ -34,6 +35,7 @@ Route::domain($adminDomain)->middleware('web')->group(function () {
         Route::livewire('/admin/products', ProductsPage::class)->name('admin.products');
         Route::livewire('/admin/orders', OrdersPage::class)->name('admin.orders');
         Route::livewire('/admin/coupons', CouponsPage::class)->name('admin.coupons');
+        Route::livewire('/admin/shipping-rules', ShippingRulesPage::class)->name('admin.shipping-rules');
         Route::livewire('/admin/settings', SettingsPage::class)->name('admin.settings');
 
         Route::middleware(EnsureSuperAdmin::class)->group(function () {
