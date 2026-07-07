@@ -41,6 +41,9 @@
           <a href="{{ route('admin.settings') }}" class="block rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
             Settings
           </a>
+          <a href="{{ route('admin.banners') }}" class="block rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+            Banners
+          </a>
           @if (auth('admin')->user()?->isSuper())
             <a href="{{ route('admin.brands') }}" class="block rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
               Brands

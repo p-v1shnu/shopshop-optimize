@@ -4,6 +4,7 @@ use App\Http\Middleware\AuthenticateAdmin;
 use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\SetAdminCurrentShop;
 use App\Livewire\Admin\AdminAccountsPage;
+use App\Livewire\Admin\BannersPage;
 use App\Livewire\Admin\BrandsPage;
 use App\Livewire\Admin\CouponsPage;
 use App\Livewire\Admin\CustomersPage;
@@ -40,6 +41,7 @@ Route::domain($adminDomain)->middleware('web')->group(function () {
         Route::livewire('/admin/shipping-rules', ShippingRulesPage::class)->name('admin.shipping-rules');
         Route::livewire('/admin/customers', CustomersPage::class)->name('admin.customers');
         Route::livewire('/admin/settings', SettingsPage::class)->name('admin.settings');
+        Route::livewire('/admin/banners', BannersPage::class)->name('admin.banners');
 
         Route::middleware(EnsureSuperAdmin::class)->group(function () {
             Route::livewire('/admin/admin-accounts', AdminAccountsPage::class)->name('admin.admin-accounts');
