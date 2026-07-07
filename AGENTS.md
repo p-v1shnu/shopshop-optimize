@@ -54,4 +54,5 @@ Implement **one PRD module at a time** (M0 → M1 → …); treat each module's 
 - **Docs sync:** edit `AGENTS.md` only; `CLAUDE.md` imports it. Keep this file current when conventions/decisions change.
 - **All Phase 3 (backoffice) work stays on the single branch `feat/admin-m0`** — do NOT create a new branch per module, and do NOT merge to `main` until the user asks. Make small, focused commits per step.
 - Run/verify changes in the Docker stack before saying they work.
+- Keep the local dev DB usable for continued manual testing after changes: `migrate --seed` must leave the seeded tenants (`babybright`, `muanson`, `gadzila`) and the dev super-admin login available (`pele@bizgital.com` / `ChangeMe!AdminM0`). Do not wipe/leave an empty DB when finishing work; if local login fails because admins/tenants are missing, run `docker compose exec app php artisan migrate --seed`.
 - **v1 = schema-minimal** (see docs/08 §1.1): only new table is `admins`; don't alter existing tables/enums.
