@@ -110,6 +110,65 @@ class AdminM1Test extends TestCase
         $this->assertGuest('admin');
     }
 
+    public function test_super_admin_cannot_deactivate_their_own_account(): void
+    {
+        $this->createTenant('babybright', 'Baby Bright');
+        $super = $this->createSuperAdmin();
+
+        $this->actingAs($super, 'admin');
+
+        Livewire::test(AdminAccountsPage::class)
+            ->call('setStatus', $super->id, 'inactive')
+            ->assertHasErrors(['status']);
+
+        $this->assertSame('active', $super->refresh()->status);
+    }
+
+    public function test_cannot_deactivate_last_active_super_admin(): void
+    {
+        $this->createTenant('babybright', 'Baby Bright');
+        $inactiveActor = Admin::query()->create([
+            'name' => 'Inactive Super',
+            'email' => 'inactive-super@example.com',
+            'password' => Hash::make('password'),
+            'role' => 'super',
+            'tenant_id' => null,
+            'status' => 'inactive',
+        ]);
+        $lastActiveSuper = $this->createSuperAdmin();
+
+        $this->actingAs($inactiveActor, 'admin');
+
+        Livewire::test(AdminAccountsPage::class)
+            ->call('setStatus', $lastActiveSuper->id, 'inactive')
+            ->assertHasErrors(['status']);
+
+        $this->assertSame('active', $lastActiveSuper->refresh()->status);
+    }
+
+    public function test_super_admin_can_deactivate_non_last_super_admin(): void
+    {
+        $this->createTenant('babybright', 'Baby Bright');
+        $actor = $this->createSuperAdmin();
+        $otherSuper = Admin::query()->create([
+            'name' => 'Other Super',
+            'email' => 'other-super@example.com',
+            'password' => Hash::make('password'),
+            'role' => 'super',
+            'tenant_id' => null,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($actor, 'admin');
+
+        Livewire::test(AdminAccountsPage::class)
+            ->call('setStatus', $otherSuper->id, 'inactive')
+            ->assertHasNoErrors();
+
+        $this->assertSame('inactive', $otherSuper->refresh()->status);
+        $this->assertSame('active', $actor->refresh()->status);
+    }
+
     public function test_shop_admin_cannot_access_admin_accounts_routes_or_nav(): void
     {
         $this->createTenant('babybright', 'Baby Bright');

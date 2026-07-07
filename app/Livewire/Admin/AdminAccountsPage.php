@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Models\Admin;
 use App\Models\Tenant;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
@@ -86,9 +87,24 @@ class AdminAccountsPage extends Component
             ]
         )->validate();
 
-        Admin::query()
-            ->whereKey($adminId)
-            ->update(['status' => $status]);
+        $admin = Admin::query()->findOrFail($adminId);
+
+        if ($status === 'inactive' && $admin->id === Auth::guard('admin')->id()) {
+            $this->addError('status', 'You cannot deactivate your own account.');
+            return;
+        }
+
+        if (
+            $status === 'inactive'
+            && $admin->isSuper()
+            && $admin->status === 'active'
+            && Admin::query()->where('role', 'super')->where('status', 'active')->count() <= 1
+        ) {
+            $this->addError('status', 'At least one active super admin is required.');
+            return;
+        }
+
+        $admin->update(['status' => $status]);
     }
 
     public function render()
