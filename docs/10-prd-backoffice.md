@@ -1,6 +1,6 @@
 # 10 — PRD: Backoffice v1 (lean)
 
-> **Status:** v1 core (M0–M5) ✅ เสร็จแล้ว · v1.1 (M6–M10) 🚧 กำลังทำ · **Scope:** ระบบหลังบ้าน (admin)
+> **Status:** v1 core (M0–M5) ✅ · v1.1 (M6–M10) ✅ · **v1.2 (H11 + M11–M14) 🚧 กำลังทำ** · **Scope:** ระบบหลังบ้าน (admin)
 > เอกสารนี้ตอบ **"ต้องได้อะไร + เสร็จหน้าตาไหน" (มุมผู้ใช้)** — คู่กับ [08-backoffice-plan.md](08-backoffice-plan.md) ที่ตอบ **"สร้างยังไง" (สถาปัตยกรรม)** และ [09-future-improvements.md](09-future-improvements.md) (สิ่งที่เลื่อน)
 > ใช้เป็น spec กลางสำหรับทั้ง Claude และ Codex — acceptance criteria คือเกณฑ์ว่างาน "เสร็จ"
 
@@ -26,14 +26,19 @@
 - ออเดอร์ + refund แบบ manual (M4)
 - Dashboard เบา ๆ (M5)
 
-### v1.1 (M6–M10) 🚧 wave ถัดไป — ปลดล็อกงานที่ยังต้องแก้ผ่าน DB/seeder
+### v1.1 (M6–M10) ✅ เสร็จแล้ว
 - คูปอง (M6), กฎค่าส่ง (M7), ลูกค้า/ban (M8), จัดการ brand/tenant+domain+config (M9, super), แบนเนอร์ (M10)
 - ทั้งหมด **schema-minimal** (ตาราง/คอลัมน์มีครบแล้ว ไม่ต้อง migration)
 
+### v1.2 (H11 + M11–M14) 🚧 wave ปัจจุบัน — hardening + เครื่องมือดูแลระบบ
+- **H11 hardening batch**: idempotency guards (cancel/refund), self-lockout guard, เปิด HAL webhook signature, หน้าเปลี่ยนรหัสผ่านตัวเอง
+- M11 หน้าดู Logs (super), M12 สถิติการค้นหา, M13 Central settings (super), M14 Admin audit log
+- M14 ต้องเพิ่มตารางใหม่ 1 ตาราง (`admin_activity_logs`) — **additive เท่านั้น** ไม่แตะตาราง/enum เดิม (ผ่อนกฎ schema-minimal แบบมีขอบเขต)
+
 ### ยังไม่อยู่ใน scope (→ [09-future-improvements.md](09-future-improvements.md))
 - refund state machine + **import CSV ธนาคาร** แบบ bulk (ตอนนี้ทำ manual ทีละออเดอร์)
-- staff + สิทธิ์ย่อย, แอดมิน 1 คนหลายร้าน, audit log, ภาษาไทย, category สินค้า, แก้เนื้อหาออเดอร์
-- database-per-tenant, 2FA, thumbnail/variant รูป
+- staff + สิทธิ์ย่อย, แอดมิน 1 คนหลายร้าน, **ภาษาไทย**, category สินค้า, แก้เนื้อหาออเดอร์
+- database-per-tenant, **2FA**, thumbnail/variant รูป
 
 ## 4. Requirements ต่อโมดูล (user stories + acceptance criteria)
 
@@ -136,10 +141,50 @@
 - [ ] เก็บ URL รูปในรูปแบบเดิมที่หน้าร้านลูกค้าใช้ (ตรวจ shape กับ storefront blade ก่อน finalize)
 - [ ] scope ต่อร้าน (แก้ tenant ปัจจุบัน), ไม่ migration
 
-### Hardening (แทรกได้ทุกจุดของ v1.1) — จาก [09-future-improvements.md](09-future-improvements.md)
-- [ ] Idempotency guards: `OrdersPage::cancelOrder()`/`refundOrder()` กันกดซ้ำ (ตอนนี้ restock/log ซ้ำได้)
-- [ ] Admin self-lockout guard: กัน super ปิดบัญชีตัวเอง / ปิด super คนสุดท้าย
-- [ ] เปิด verify HMAC signature ของ HAL webhook กลับ (ตอนนี้ comment bypass)
+---
+
+## v1.2 (H11 + M11–M14) — hardening + เครื่องมือดูแลระบบ
+
+> ตกลง scope แล้ว: **ไม่ทำ** 2FA, CSV refund import, ภาษาไทย (ยังอยู่ใน docs/09)
+
+### H11 — Hardening batch
+**Story:** ในฐานะเจ้าของระบบ ฉันอยากปิดช่องโหว่ที่พบระหว่าง verify M0–M10 ก่อนใช้งานจริง
+**AC:**
+- [ ] **Cancel guard:** `OrdersPage::cancelOrder()` ยกเลิกได้เฉพาะออเดอร์ที่ `payment_status` เป็น `pending` หรือ `paid` — ถ้าเป็น `cancelled`/`refunded`/`expired` แล้วต้องขึ้น error อ่านง่าย (ห้าม restock/คืนคูปองซ้ำ) และครอบทั้ง action ใน `DB::transaction()`
+- [ ] **Refund guard:** `refundOrder()` ทำได้เฉพาะ `payment_status = paid` — refund ซ้ำต้องขึ้น error (ห้ามเขียน refund log ซ้ำ)
+- [ ] **Self-lockout guard:** `AdminAccountsPage::setStatus()` — ห้ามปิดบัญชีตัวเอง และห้ามปิด super ที่ active คนสุดท้าย (ขึ้น error อ่านง่าย)
+- [ ] **HAL webhook signature:** เปิด verify HMAC ใน `HALController::webhookPost()` กลับ (ลบ comment bypass) — signature mismatch → 403 + log ลง `shipping_logs` เหมือน pattern เดิมที่ comment ไว้
+- [ ] **HAL order-not-found guard:** ใน `webhookPost` ถ้าไม่พบออเดอร์จาก tracking number ต้อง **return** ทันที (บั๊กเดิม: log แล้วไหลต่อไปเรียก `$order->update()` บน null = fatal)
+- [ ] **Change my password:** admin ทุก role เปลี่ยนรหัสผ่านตัวเองได้ (กรอกรหัสเดิม + รหัสใหม่ 2 ครั้ง) — เมนู/หน้าใหม่ ไม่กระทบ reset ของ super ใน M1
+
+### M11 — หน้าดู Logs (super เท่านั้น)
+**Story:** ในฐานะ super-admin ฉันอยากดู log กลางเพื่อ debug ปัญหา payment/ขนส่ง/OTP โดยไม่ต้องเข้า DB
+**AC:**
+- [ ] ดู `webhook_logs`, `shipping_logs`, `otp_logs` (แท็บหรือฟิลเตอร์แยกชนิด) เรียงล่าสุดก่อน, แบ่งหน้า, ฟิลเตอร์ช่วงวันที่ + ค้นหา (type/provider/reference/msisdn ตามตาราง)
+- [ ] แสดง detail JSON อ่านง่าย (expand/collapse ได้) — **read-only ล้วน**
+- [ ] ตารางเหล่านี้เป็น central (ไม่มี tenant_id) → **super เท่านั้น** (shop-admin เข้าไม่ได้)
+- [ ] ⚠️ `otp_logs` มีรหัส OTP — ต้อง mask ค่า `otp` ในหน้า list (แสดงเช่น `***`)
+
+### M12 — สถิติการค้นหา (per shop)
+**Story:** ในฐานะแอดมินร้าน ฉันอยากรู้ว่าลูกค้าค้นหาอะไร เพื่อตัดสินใจเรื่องสินค้า/สต็อก
+**AC:**
+- [ ] สรุปคำค้นยอดนิยมของร้าน (group by `search_term` + count) จาก `shop_user_searches` + ฟิลเตอร์ช่วงวันที่, แบ่งหน้า
+- [ ] แสดงสินค้าที่ถูกค้นหามากสุด (จาก `shop_products.total_search`)
+- [ ] scope ต่อร้านปัจจุบัน (ทั้ง super/shop) — read-only
+
+### M13 — Central settings (super เท่านั้น)
+**Story:** ในฐานะ super-admin ฉันอยากแก้ setting กลางของแพลตฟอร์ม (ตาราง `settings`) จาก UI
+**AC:**
+- [ ] แก้ `title`, `facebook_cover_url`, `landing_page_url` ของ record `settings` (สร้าง record ถ้ายังไม่มี — helper `setting()` อ่านผ่าน singleton)
+- [ ] super เท่านั้น; ไม่ migration
+
+### M14 — Admin audit log
+**Story:** ในฐานะ super-admin ฉันอยากรู้ว่าแอดมินคนไหนทำอะไรเมื่อไหร่ เพื่อตรวจสอบย้อนหลัง
+**AC:**
+- [ ] ตารางใหม่ `admin_activity_logs` (**additive** — ห้ามแตะตารางเดิม): admin_id FK, tenant_id nullable, action (string), subject_type/subject_id nullable, detail JSON, created_at + index ที่จำเป็น
+- [ ] บันทึก action สำคัญผ่าน helper/service กลางตัวเดียว: login สำเร็จ, เปลี่ยน/รีเซ็ตรหัส, สร้าง/ปิด admin, ปรับสต็อก, cancel/refund ออเดอร์, แก้ settings/brand config, สร้าง tenant, แก้แบนเนอร์
+- [ ] หน้าให้ super ดู log ทั้งหมด (ฟิลเตอร์ admin/action/ช่วงวันที่, แบ่งหน้า); shop-admin ไม่เห็นเมนูนี้
+- [ ] การเขียน log ต้องไม่ทำให้ action หลักล้ม (ครอบ try/catch — log fail ก็แค่ report)
 
 ## 5. Non-functional
 - **สกุลเงิน:** LAK (Lao Kip), จำนวนเงิน decimal 2 ตำแหน่ง · **Timezone:** Asia/Vientiane
