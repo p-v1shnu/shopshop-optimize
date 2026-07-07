@@ -171,6 +171,73 @@ class AdminM4Test extends TestCase
         ]);
     }
 
+    public function test_cancel_order_is_idempotent_after_first_cancel(): void
+    {
+        $this->createTenant('babybright', 'Baby Bright');
+        $admin = $this->createShopAdmin('babybright');
+        $product = $this->createProduct('babybright', 'Glow Cream', 'BB-GLOW', availableQuantity: 1);
+        $order = $this->createOrder('babybright', 'BB-4101', paymentStatus: 'pending');
+        $this->createOrderDetail($order, $product, 3, 99000);
+        $coupon = $this->createCoupon('babybright', availableQuantity: 0);
+        $this->createOrderCoupon($order, $coupon);
+
+        $this->actingAs($admin, 'admin');
+        $this->withSession(['admin_current_tenant_id' => 'babybright']);
+
+        $component = Livewire::test(OrdersPage::class)
+            ->call('selectOrder', $order->id)
+            ->set('cancelRemark', 'Customer requested cancellation')
+            ->call('cancelOrder')
+            ->assertHasNoErrors();
+
+        $this->assertSame('cancelled', $order->refresh()->payment_status);
+        $this->assertSame(4, $product->refresh()->available_quantity);
+        $this->assertSame(1, $coupon->refresh()->available_quantity);
+
+        $component
+            ->set('cancelRemark', 'Second click')
+            ->call('cancelOrder')
+            ->assertHasErrors(['cancelRemark']);
+
+        $this->assertSame('cancelled', $order->refresh()->payment_status);
+        $this->assertSame(4, $product->refresh()->available_quantity);
+        $this->assertSame(1, $coupon->refresh()->available_quantity);
+        $this->assertSame(1, ShopProductStock::query()->where('shop_product_id', $product->id)->count());
+        $this->assertSame(1, ShopOrderLog::query()
+            ->where('shop_order_id', $order->id)
+            ->where('type', 'cancel_order')
+            ->count());
+    }
+
+    public function test_cancel_refunded_order_errors_without_side_effects(): void
+    {
+        $this->createTenant('babybright', 'Baby Bright');
+        $admin = $this->createShopAdmin('babybright');
+        $product = $this->createProduct('babybright', 'Glow Cream', 'BB-GLOW', availableQuantity: 1);
+        $order = $this->createOrder('babybright', 'BB-4201', paymentStatus: 'refunded');
+        $this->createOrderDetail($order, $product, 3, 99000);
+        $coupon = $this->createCoupon('babybright', availableQuantity: 0);
+        $this->createOrderCoupon($order, $coupon);
+
+        $this->actingAs($admin, 'admin');
+        $this->withSession(['admin_current_tenant_id' => 'babybright']);
+
+        Livewire::test(OrdersPage::class)
+            ->call('selectOrder', $order->id)
+            ->set('cancelRemark', 'Try cancel refunded')
+            ->call('cancelOrder')
+            ->assertHasErrors(['cancelRemark']);
+
+        $this->assertSame('refunded', $order->refresh()->payment_status);
+        $this->assertSame(1, $product->refresh()->available_quantity);
+        $this->assertSame(0, $coupon->refresh()->available_quantity);
+        $this->assertSame(0, ShopProductStock::query()->where('shop_product_id', $product->id)->count());
+        $this->assertSame(0, ShopOrderLog::query()
+            ->where('shop_order_id', $order->id)
+            ->where('type', 'cancel_order')
+            ->count());
+    }
+
     public function test_refund_sets_refunded_status_and_writes_reference_log(): void
     {
         $this->createTenant('babybright', 'Baby Bright');
@@ -198,6 +265,40 @@ class AdminM4Test extends TestCase
         $this->assertSame('Refund confirmed by bank CSV', $log->detail['note']);
         $this->assertSame($admin->id, $log->detail['actor']['id']);
         $this->assertArrayHasKey('recorded_at', $log->detail);
+    }
+
+    public function test_refund_order_is_idempotent_after_first_refund(): void
+    {
+        $this->createTenant('babybright', 'Baby Bright');
+        $admin = $this->createShopAdmin('babybright');
+        $order = $this->createOrder('babybright', 'BB-5101', paymentStatus: 'paid');
+
+        $this->actingAs($admin, 'admin');
+        $this->withSession(['admin_current_tenant_id' => 'babybright']);
+
+        $component = Livewire::test(OrdersPage::class)
+            ->call('selectOrder', $order->id)
+            ->set('refundReference', 'BANK-REF-123')
+            ->call('refundOrder')
+            ->assertHasNoErrors();
+
+        $this->assertSame('refunded', $order->refresh()->payment_status);
+
+        $component
+            ->set('refundReference', 'BANK-REF-456')
+            ->call('refundOrder')
+            ->assertHasErrors(['refundReference']);
+
+        $this->assertSame('refunded', $order->refresh()->payment_status);
+        $this->assertSame(1, ShopOrderLog::query()
+            ->where('shop_order_id', $order->id)
+            ->where('type', 'refund')
+            ->count());
+        $this->assertSame('BANK-REF-123', ShopOrderLog::query()
+            ->where('shop_order_id', $order->id)
+            ->where('type', 'refund')
+            ->firstOrFail()
+            ->detail['reference']);
     }
 
     public function test_shop_admin_cannot_touch_another_shops_order(): void

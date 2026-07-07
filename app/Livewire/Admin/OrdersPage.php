@@ -11,6 +11,7 @@ use App\Support\InvoiceWebhookNotifier;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -124,51 +125,67 @@ class OrdersPage extends Component
             'cancelRemark' => ['required', 'string', 'max:1000'],
         ]);
 
-        $order = $this->findScopedOrder($this->selectedOrderId, ['details', 'coupons']);
+        $cancelled = false;
 
-        foreach ($order->details as $detail) {
-            $product = ShopProduct::query()
-                ->where('tenant_id', $this->tenantId)
-                ->whereKey($detail->shop_product_id)
-                ->first();
+        DB::transaction(function () use ($validated, &$cancelled): void {
+            $order = $this->findScopedOrderForUpdate($this->selectedOrderId, ['details', 'coupons']);
 
-            if (! $product) {
-                continue;
-            }
-
-            $result = $product->updateProductAvailableQuantity(
-                (int) $detail->quantity,
-                'UPDATE',
-                'Order cancelled: '.$validated['cancelRemark']
-            );
-
-            if (! $result['success']) {
-                $this->addError('cancelRemark', $result['message']);
+            if (! in_array($order->payment_status, ['pending', 'paid'], true)) {
+                $this->addError('cancelRemark', 'Only pending or paid orders can be cancelled.');
                 return;
             }
+
+            foreach ($order->details as $detail) {
+                $product = ShopProduct::query()
+                    ->where('tenant_id', $this->tenantId)
+                    ->whereKey($detail->shop_product_id)
+                    ->first();
+
+                if (! $product) {
+                    continue;
+                }
+
+                $result = $product->updateProductAvailableQuantity(
+                    (int) $detail->quantity,
+                    'UPDATE',
+                    'Order cancelled: '.$validated['cancelRemark']
+                );
+
+                if (! $result['success']) {
+                    throw ValidationException::withMessages([
+                        'cancelRemark' => $result['message'],
+                    ]);
+                }
+            }
+
+            foreach ($order->coupons as $orderCoupon) {
+                ShopCoupon::query()
+                    ->where('tenant_id', $this->tenantId)
+                    ->whereKey($orderCoupon->shop_coupon_id)
+                    ->increment('available_quantity');
+            }
+
+            $order->update([
+                'payment_status' => 'cancelled',
+            ]);
+
+            ShopOrderLog::query()->create([
+                'tenant_id' => $order->tenant_id,
+                'shop_order_id' => $order->id,
+                'type' => 'cancel_order',
+                'detail' => [
+                    'remark' => $validated['cancelRemark'],
+                    'actor' => $this->actorDetail(),
+                    'recorded_at' => now()->toIso8601String(),
+                ],
+            ]);
+
+            $cancelled = true;
+        });
+
+        if (! $cancelled) {
+            return;
         }
-
-        foreach ($order->coupons as $orderCoupon) {
-            ShopCoupon::query()
-                ->where('tenant_id', $this->tenantId)
-                ->whereKey($orderCoupon->shop_coupon_id)
-                ->increment('available_quantity');
-        }
-
-        $order->update([
-            'payment_status' => 'cancelled',
-        ]);
-
-        ShopOrderLog::query()->create([
-            'tenant_id' => $order->tenant_id,
-            'shop_order_id' => $order->id,
-            'type' => 'cancel_order',
-            'detail' => [
-                'remark' => $validated['cancelRemark'],
-                'actor' => $this->actorDetail(),
-                'recorded_at' => now()->toIso8601String(),
-            ],
-        ]);
 
         $this->cancelRemark = '';
     }
@@ -182,8 +199,15 @@ class OrdersPage extends Component
             'refundNote' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        DB::transaction(function () use ($validated): void {
-            $order = $this->findScopedOrder($this->selectedOrderId);
+        $refunded = false;
+
+        DB::transaction(function () use ($validated, &$refunded): void {
+            $order = $this->findScopedOrderForUpdate($this->selectedOrderId);
+
+            if ($order->payment_status !== 'paid') {
+                $this->addError('refundReference', 'Only paid orders can be refunded.');
+                return;
+            }
 
             $order->update([
                 'payment_status' => 'refunded',
@@ -200,7 +224,13 @@ class OrdersPage extends Component
                     'recorded_at' => now()->toIso8601String(),
                 ],
             ]);
+
+            $refunded = true;
         });
+
+        if (! $refunded) {
+            return;
+        }
 
         $this->refundReference = '';
         $this->refundNote = null;
@@ -258,6 +288,23 @@ class OrdersPage extends Component
             ->first();
 
         abort_if(! $order, 404);
+
+        return $order;
+    }
+
+    private function findScopedOrderForUpdate(string $orderId, array $with = []): ShopOrder
+    {
+        $order = ShopOrder::query()
+            ->where('tenant_id', $this->tenantId)
+            ->whereKey($orderId)
+            ->lockForUpdate()
+            ->first();
+
+        abort_if(! $order, 404);
+
+        if ($with !== []) {
+            $order->load($with);
+        }
 
         return $order;
     }
