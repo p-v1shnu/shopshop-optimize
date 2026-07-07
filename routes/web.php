@@ -10,6 +10,7 @@ use App\Livewire\Admin\CouponsPage;
 use App\Livewire\Admin\CustomersPage;
 use App\Livewire\Admin\DashboardPage;
 use App\Livewire\Admin\LoginPage;
+use App\Livewire\Admin\MyAccountPage;
 use App\Livewire\Admin\OrdersPage;
 use App\Livewire\Admin\ProductsPage;
 use App\Livewire\Admin\SettingsPage;
@@ -42,6 +43,7 @@ Route::domain($adminDomain)->middleware('web')->group(function () {
         Route::livewire('/admin/customers', CustomersPage::class)->name('admin.customers');
         Route::livewire('/admin/settings', SettingsPage::class)->name('admin.settings');
         Route::livewire('/admin/banners', BannersPage::class)->name('admin.banners');
+        Route::livewire('/admin/my-account', MyAccountPage::class)->name('admin.my-account');
 
         Route::middleware(EnsureSuperAdmin::class)->group(function () {
             Route::livewire('/admin/admin-accounts', AdminAccountsPage::class)->name('admin.admin-accounts');

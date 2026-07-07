@@ -75,6 +75,10 @@
               </form>
             @endif
 
+            <a href="{{ route('admin.my-account') }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700">
+              My account
+            </a>
+
             <form method="POST" action="{{ route('admin.logout') }}">
               @csrf
               <button type="submit" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700">Logout</button>
