@@ -146,35 +146,26 @@ class HALController extends Controller
             return response('Signature is missing', 400);
         }
 
-//        if ($generatedSignature !== $receivedSignature) {
-//            Log::info('HAL Webhook Signature mismatch', [
-//                'generatedSignature' => $generatedSignature,
-//                'receivedSignature'  => $receivedSignature,
-//            ]);
-//
-//            $shippingLog->update([
-//                'data->response' => [
-//                    'message' => 'HAL Webhook Signature mismatch',
-//                    'data' => [
-//                        'generatedSignature' => $generatedSignature,
-//                        'receivedSignature'  => $receivedSignature,
-//                    ]
-//                ]
-//            ]);
-//
-//            return response('Signature mismatch', 403);
-//        }
+        if (! hash_equals($generatedSignature, $receivedSignature)) {
+            Log::info('HAL Webhook Signature mismatch', [
+                'generatedSignature' => $generatedSignature,
+                'receivedSignature'  => $receivedSignature,
+            ]);
 
-//        Log::info('HAL Webhook Verified payload', $payload);
+            $shippingLog->update([
+                'data->response' => [
+                    'message' => 'HAL Webhook Signature mismatch',
+                    'data' => [
+                        'generatedSignature' => $generatedSignature,
+                        'receivedSignature'  => $receivedSignature,
+                    ]
+                ]
+            ]);
 
-        Log::info('HAL Webhook temporary signature verify bypassed', $payload);
+            return response('Signature mismatch', 403);
+        }
 
-        $shippingLog->update([
-            'data->response' => [
-                'message' => 'HAL Webhook temporary signature verify bypassed',
-                'data' => []
-            ]
-        ]);
+        Log::info('HAL Webhook Verified payload', $payload);
 
         // ================================================================================
 
@@ -190,6 +181,8 @@ class HALController extends Controller
                         'data' => []
                     ]
                 ]);
+
+                return response()->json(['message' => 'Order not found for update shipping status']);
             }
 
             $statusId = $payload['changes']['shipment']['shipment_status_id'];
