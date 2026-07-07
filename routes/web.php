@@ -5,6 +5,7 @@ use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\SetAdminCurrentShop;
 use App\Livewire\Admin\AdminAccountsPage;
 use App\Livewire\Admin\CouponsPage;
+use App\Livewire\Admin\CustomersPage;
 use App\Livewire\Admin\DashboardPage;
 use App\Livewire\Admin\LoginPage;
 use App\Livewire\Admin\OrdersPage;
@@ -36,6 +37,7 @@ Route::domain($adminDomain)->middleware('web')->group(function () {
         Route::livewire('/admin/orders', OrdersPage::class)->name('admin.orders');
         Route::livewire('/admin/coupons', CouponsPage::class)->name('admin.coupons');
         Route::livewire('/admin/shipping-rules', ShippingRulesPage::class)->name('admin.shipping-rules');
+        Route::livewire('/admin/customers', CustomersPage::class)->name('admin.customers');
         Route::livewire('/admin/settings', SettingsPage::class)->name('admin.settings');
 
         Route::middleware(EnsureSuperAdmin::class)->group(function () {
