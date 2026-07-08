@@ -60,6 +60,9 @@
             <a href="{{ route('admin.central-settings') }}" class="block rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
               Central settings
             </a>
+            <a href="{{ route('admin.activity-logs') }}" class="block rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+              Admin audit log
+            </a>
           @endif
         </nav>
       </aside>
