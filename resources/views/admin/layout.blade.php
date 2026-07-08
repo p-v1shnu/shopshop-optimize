@@ -51,6 +51,9 @@
             <a href="{{ route('admin.admin-accounts') }}" class="block rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
               Admin accounts
             </a>
+            <a href="{{ route('admin.logs') }}" class="block rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+              Logs
+            </a>
           @endif
         </nav>
       </aside>
