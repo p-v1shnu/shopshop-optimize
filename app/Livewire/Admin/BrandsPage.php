@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Models\Tenant;
+use App\Support\AdminActivityLogger;
 use App\Utils\FormUtil;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -86,7 +87,9 @@ class BrandsPage extends Component
     {
         $validated = $this->validate($this->createRules());
 
-        DB::transaction(function () use ($validated): void {
+        $tenant = null;
+
+        DB::transaction(function () use ($validated, &$tenant): void {
             $tenant = Tenant::query()->create([
                 'id' => $validated['createId'],
                 'name' => $validated['createName'],
@@ -99,6 +102,13 @@ class BrandsPage extends Component
                 'domain' => $this->normalizeDomain($validated['createDomain']),
             ]);
         });
+
+        app(AdminActivityLogger::class)->log('brand.created', $tenant, [
+            'tenant_id' => $tenant->id,
+            'name' => $tenant->name,
+            'status' => $tenant->status,
+            'domain' => $this->normalizeDomain($validated['createDomain']),
+        ]);
 
         $this->reset(['createId', 'createName', 'createDomain']);
         $this->createStatus = 'active';
@@ -160,7 +170,9 @@ class BrandsPage extends Component
             $siteLogoUrl = Storage::disk(config('filesystems.default'))->url($path);
         }
 
-        $this->findTenant($this->editingTenantId)->update([
+        $tenant = $this->findTenant($this->editingTenantId);
+
+        $tenant->update([
             'name' => $validated['name'],
             'status' => $validated['status'],
             'site_logo_url' => $siteLogoUrl,
@@ -185,6 +197,12 @@ class BrandsPage extends Component
             'footer_more_info_link' => $this->blankToNull($validated['footerMoreInfoLink']),
             'head_html' => $this->blankToNull($validated['headHtml']),
             'title' => $this->blankToNull($validated['title']),
+        ]);
+
+        app(AdminActivityLogger::class)->log('brand.updated', $tenant, [
+            'tenant_id' => $tenant->id,
+            'name' => $tenant->name,
+            'status' => $tenant->status,
         ]);
 
         $this->edit($this->editingTenantId);

@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Models\ShopProduct;
 use App\Models\ShopProductStock;
+use App\Support\AdminActivityLogger;
 use App\Support\AdminTenantScope;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -178,6 +179,14 @@ class ProductsPage extends Component
             $this->addError('stockQuantity', $result['message']);
             return;
         }
+
+        app(AdminActivityLogger::class)->log('product.stock.adjusted', $product, [
+            'tenant_id' => $this->tenantId,
+            'type' => $validated['stockType'],
+            'quantity' => (int) $validated['stockQuantity'],
+            'remark' => $validated['stockRemark'],
+            'available_quantity' => $product->refresh()->available_quantity,
+        ]);
 
         $this->resetStockForm();
     }

@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Models\Admin;
 use App\Models\Tenant;
+use App\Support\AdminActivityLogger;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
@@ -40,7 +41,7 @@ class AdminAccountsPage extends Component
             'createPassword' => ['required', 'string', 'min:8'],
         ]);
 
-        Admin::query()->create([
+        $admin = Admin::query()->create([
             'name' => $validated['createName'],
             'email' => $validated['createEmail'],
             'password' => Hash::make($validated['createPassword']),
@@ -49,6 +50,12 @@ class AdminAccountsPage extends Component
                 ? $validated['createTenantId']
                 : null,
             'status' => 'active',
+        ]);
+
+        app(AdminActivityLogger::class)->log('admin.created', $admin, [
+            'email' => $admin->email,
+            'role' => $admin->role,
+            'tenant_id' => $admin->tenant_id,
         ]);
 
         $this->reset([
@@ -68,11 +75,17 @@ class AdminAccountsPage extends Component
             'resetPasswordValue' => ['required', 'string', 'min:8'],
         ]);
 
-        Admin::query()
-            ->whereKey($validated['resetAdminId'])
-            ->update([
-                'password' => Hash::make($validated['resetPasswordValue']),
-            ]);
+        $admin = Admin::query()->findOrFail($validated['resetAdminId']);
+
+        $admin->update([
+            'password' => Hash::make($validated['resetPasswordValue']),
+        ]);
+
+        app(AdminActivityLogger::class)->log('admin.password.reset', $admin, [
+            'email' => $admin->email,
+            'role' => $admin->role,
+            'tenant_id' => $admin->tenant_id,
+        ]);
 
         $this->reset(['resetAdminId', 'resetPasswordValue']);
     }
@@ -104,7 +117,15 @@ class AdminAccountsPage extends Component
             return;
         }
 
+        $oldStatus = $admin->status;
+
         $admin->update(['status' => $status]);
+
+        app(AdminActivityLogger::class)->log('admin.status.changed', $admin, [
+            'email' => $admin->email,
+            'old_status' => $oldStatus,
+            'new_status' => $status,
+        ]);
     }
 
     public function render()

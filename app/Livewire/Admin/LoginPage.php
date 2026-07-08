@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Support\AdminActivityLogger;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Livewire\Component;
@@ -31,6 +32,8 @@ class LoginPage extends Component
         Auth::guard('admin')->user()->forceFill([
             'last_login_at' => now(),
         ])->save();
+
+        app(AdminActivityLogger::class)->log('admin.login');
 
         return redirect()->intended(route('admin.dashboard'));
     }

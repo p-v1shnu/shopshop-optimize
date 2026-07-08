@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Models\Tenant;
+use App\Support\AdminActivityLogger;
 use App\Support\AdminTenantScope;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Auth;
@@ -47,7 +48,9 @@ class SettingsPage extends Component
             'campaignEndsAt' => ['nullable', 'date', 'required_with:campaignCode,campaignStartsAt', 'after_or_equal:campaignStartsAt'],
         ]);
 
-        $this->currentTenant()->update([
+        $tenant = $this->currentTenant();
+
+        $tenant->update([
             'enable_shop' => $validated['enableShop'],
             'enable_coupon' => $validated['enableCoupon'],
             'shop_closed_at' => $this->normalizeDateTime($validated['shopClosedAt']),
@@ -56,7 +59,14 @@ class SettingsPage extends Component
             'campaign_ends_at' => $this->normalizeDateTime($validated['campaignEndsAt']),
         ]);
 
-        $this->fillFromTenant($this->currentTenant()->refresh());
+        app(AdminActivityLogger::class)->log('settings.saved', $tenant, [
+            'tenant_id' => $tenant->id,
+            'enable_shop' => (bool) $validated['enableShop'],
+            'enable_coupon' => (bool) $validated['enableCoupon'],
+            'campaign_code' => $this->normalizeBlank($validated['campaignCode']),
+        ]);
+
+        $this->fillFromTenant($tenant->refresh());
     }
 
     public function render()

@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Models\Tenant;
+use App\Support\AdminActivityLogger;
 use App\Support\AdminTenantScope;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -39,32 +40,32 @@ class BannersPage extends Component
 
     public function addHomepageBanners(): void
     {
-        $this->addBanners('homepageUploads', 'homepageBanners', 'homepage_banners', 'homepage');
+        $this->addBanners('homepageUploads', 'homepageBanners', 'homepage_banners', 'homepage', 'banners.homepage.added');
     }
 
     public function addPopupBanners(): void
     {
-        $this->addBanners('popupUploads', 'popupBanners', 'popup_banners', 'popup');
+        $this->addBanners('popupUploads', 'popupBanners', 'popup_banners', 'popup', 'banners.popup.added');
     }
 
     public function moveHomepageBanner(int $index, string $direction): void
     {
-        $this->moveBanner('homepageBanners', 'homepage_banners', $index, $direction);
+        $this->moveBanner('homepageBanners', 'homepage_banners', $index, $direction, 'banners.homepage.moved');
     }
 
     public function movePopupBanner(int $index, string $direction): void
     {
-        $this->moveBanner('popupBanners', 'popup_banners', $index, $direction);
+        $this->moveBanner('popupBanners', 'popup_banners', $index, $direction, 'banners.popup.moved');
     }
 
     public function removeHomepageBanner(int $index): void
     {
-        $this->removeBanner('homepageBanners', 'homepage_banners', $index);
+        $this->removeBanner('homepageBanners', 'homepage_banners', $index, 'banners.homepage.removed');
     }
 
     public function removePopupBanner(int $index): void
     {
-        $this->removeBanner('popupBanners', 'popup_banners', $index);
+        $this->removeBanner('popupBanners', 'popup_banners', $index, 'banners.popup.removed');
     }
 
     public function render()
@@ -75,13 +76,14 @@ class BannersPage extends Component
             ->title('Banners');
     }
 
-    private function addBanners(string $uploadProperty, string $bannerProperty, string $tenantColumn, string $folder): void
+    private function addBanners(string $uploadProperty, string $bannerProperty, string $tenantColumn, string $folder, string $action): void
     {
         $this->validate([
             "{$uploadProperty}.*" => ['image', 'max:4096'],
         ]);
 
         $banners = collect($this->{$bannerProperty});
+        $addedCount = 0;
 
         foreach ($this->{$uploadProperty} as $upload) {
             if (! $upload instanceof TemporaryUploadedFile) {
@@ -94,15 +96,20 @@ class BannersPage extends Component
             );
 
             $banners->push(Storage::disk(config('filesystems.default'))->url($path));
+            $addedCount++;
         }
 
         $this->{$bannerProperty} = $banners->values()->all();
         $this->{$uploadProperty} = [];
         $this->persist($tenantColumn, $this->{$bannerProperty});
+        $this->logBannerChange($action, $tenantColumn, [
+            'added_count' => $addedCount,
+            'total_count' => count($this->{$bannerProperty}),
+        ]);
         $this->resetValidation($uploadProperty);
     }
 
-    private function moveBanner(string $bannerProperty, string $tenantColumn, int $index, string $direction): void
+    private function moveBanner(string $bannerProperty, string $tenantColumn, int $index, string $direction, string $action): void
     {
         $banners = array_values($this->{$bannerProperty});
         $targetIndex = $direction === 'up' ? $index - 1 : $index + 1;
@@ -115,9 +122,14 @@ class BannersPage extends Component
 
         $this->{$bannerProperty} = array_values($banners);
         $this->persist($tenantColumn, $this->{$bannerProperty});
+        $this->logBannerChange($action, $tenantColumn, [
+            'from_index' => $index,
+            'to_index' => $targetIndex,
+            'direction' => $direction,
+        ]);
     }
 
-    private function removeBanner(string $bannerProperty, string $tenantColumn, int $index): void
+    private function removeBanner(string $bannerProperty, string $tenantColumn, int $index, string $action): void
     {
         $banners = array_values($this->{$bannerProperty});
 
@@ -129,6 +141,10 @@ class BannersPage extends Component
 
         $this->{$bannerProperty} = array_values($banners);
         $this->persist($tenantColumn, $this->{$bannerProperty});
+        $this->logBannerChange($action, $tenantColumn, [
+            'removed_index' => $index,
+            'total_count' => count($this->{$bannerProperty}),
+        ]);
     }
 
     private function persist(string $tenantColumn, array $banners): void
@@ -147,6 +163,14 @@ class BannersPage extends Component
     {
         $this->homepageBanners = $this->normalizeBanners($tenant->homepage_banners);
         $this->popupBanners = $this->normalizeBanners($tenant->popup_banners);
+    }
+
+    private function logBannerChange(string $action, string $tenantColumn, array $detail): void
+    {
+        app(AdminActivityLogger::class)->log($action, $this->currentTenant(), array_merge([
+            'tenant_id' => $this->tenantId,
+            'column' => $tenantColumn,
+        ], $detail));
     }
 
     private function normalizeBanners(mixed $banners): array

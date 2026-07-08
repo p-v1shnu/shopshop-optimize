@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Support\AdminActivityLogger;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
@@ -34,6 +35,8 @@ class MyAccountPage extends Component
         $admin->forceFill([
             'password' => Hash::make($validated['newPassword']),
         ])->save();
+
+        app(AdminActivityLogger::class)->log('admin.password.changed', $admin);
 
         $this->reset(['currentPassword', 'newPassword', 'newPasswordConfirmation']);
         $this->successMessage = 'Your password has been changed.';

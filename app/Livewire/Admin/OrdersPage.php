@@ -6,6 +6,7 @@ use App\Models\ShopCoupon;
 use App\Models\ShopOrder;
 use App\Models\ShopOrderLog;
 use App\Models\ShopProduct;
+use App\Support\AdminActivityLogger;
 use App\Support\AdminTenantScope;
 use App\Support\InvoiceWebhookNotifier;
 use Illuminate\Support\Facades\Auth;
@@ -126,8 +127,9 @@ class OrdersPage extends Component
         ]);
 
         $cancelled = false;
+        $cancelledOrder = null;
 
-        DB::transaction(function () use ($validated, &$cancelled): void {
+        DB::transaction(function () use ($validated, &$cancelled, &$cancelledOrder): void {
             $order = $this->findScopedOrderForUpdate($this->selectedOrderId, ['details', 'coupons']);
 
             if (! in_array($order->payment_status, ['pending', 'paid'], true)) {
@@ -181,11 +183,18 @@ class OrdersPage extends Component
             ]);
 
             $cancelled = true;
+            $cancelledOrder = $order;
         });
 
         if (! $cancelled) {
             return;
         }
+
+        app(AdminActivityLogger::class)->log('order.cancelled', $cancelledOrder, [
+            'tenant_id' => $cancelledOrder->tenant_id,
+            'order_code' => $cancelledOrder->order_code,
+            'remark' => $validated['cancelRemark'],
+        ]);
 
         $this->cancelRemark = '';
     }
@@ -200,8 +209,9 @@ class OrdersPage extends Component
         ]);
 
         $refunded = false;
+        $refundedOrder = null;
 
-        DB::transaction(function () use ($validated, &$refunded): void {
+        DB::transaction(function () use ($validated, &$refunded, &$refundedOrder): void {
             $order = $this->findScopedOrderForUpdate($this->selectedOrderId);
 
             if ($order->payment_status !== 'paid') {
@@ -226,11 +236,19 @@ class OrdersPage extends Component
             ]);
 
             $refunded = true;
+            $refundedOrder = $order;
         });
 
         if (! $refunded) {
             return;
         }
+
+        app(AdminActivityLogger::class)->log('order.refunded', $refundedOrder, [
+            'tenant_id' => $refundedOrder->tenant_id,
+            'order_code' => $refundedOrder->order_code,
+            'reference' => $validated['refundReference'],
+            'note' => blank($validated['refundNote']) ? null : $validated['refundNote'],
+        ]);
 
         $this->refundReference = '';
         $this->refundNote = null;
