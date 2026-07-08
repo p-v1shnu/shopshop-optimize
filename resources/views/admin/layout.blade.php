@@ -38,6 +38,9 @@
           <a href="{{ route('admin.customers') }}" class="block rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
             Customers
           </a>
+          <a href="{{ route('admin.search-analytics') }}" class="block rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+            Search analytics
+          </a>
           <a href="{{ route('admin.settings') }}" class="block rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
             Settings
           </a>

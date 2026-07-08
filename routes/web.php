@@ -14,6 +14,7 @@ use App\Livewire\Admin\LogsPage;
 use App\Livewire\Admin\MyAccountPage;
 use App\Livewire\Admin\OrdersPage;
 use App\Livewire\Admin\ProductsPage;
+use App\Livewire\Admin\SearchAnalyticsPage;
 use App\Livewire\Admin\SettingsPage;
 use App\Livewire\Admin\ShippingRulesPage;
 use App\Models\Tenant;
@@ -42,6 +43,7 @@ Route::domain($adminDomain)->middleware('web')->group(function () {
         Route::livewire('/admin/coupons', CouponsPage::class)->name('admin.coupons');
         Route::livewire('/admin/shipping-rules', ShippingRulesPage::class)->name('admin.shipping-rules');
         Route::livewire('/admin/customers', CustomersPage::class)->name('admin.customers');
+        Route::livewire('/admin/search-analytics', SearchAnalyticsPage::class)->name('admin.search-analytics');
         Route::livewire('/admin/settings', SettingsPage::class)->name('admin.settings');
         Route::livewire('/admin/banners', BannersPage::class)->name('admin.banners');
         Route::livewire('/admin/my-account', MyAccountPage::class)->name('admin.my-account');
