@@ -6,6 +6,7 @@ use App\Http\Middleware\SetAdminCurrentShop;
 use App\Livewire\Admin\AdminAccountsPage;
 use App\Livewire\Admin\BannersPage;
 use App\Livewire\Admin\BrandsPage;
+use App\Livewire\Admin\CentralSettingsPage;
 use App\Livewire\Admin\CouponsPage;
 use App\Livewire\Admin\CustomersPage;
 use App\Livewire\Admin\DashboardPage;
@@ -52,6 +53,7 @@ Route::domain($adminDomain)->middleware('web')->group(function () {
             Route::livewire('/admin/admin-accounts', AdminAccountsPage::class)->name('admin.admin-accounts');
             Route::livewire('/admin/brands', BrandsPage::class)->name('admin.brands');
             Route::livewire('/admin/logs', LogsPage::class)->name('admin.logs');
+            Route::livewire('/admin/central-settings', CentralSettingsPage::class)->name('admin.central-settings');
         });
 
         Route::post('/admin/current-shop', function (Request $request) {
