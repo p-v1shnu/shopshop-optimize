@@ -130,7 +130,10 @@ class AdminM11Test extends TestCase
             'provider_reference' => 'OTP-REF-2',
             'msisdn' => '205552222',
             'otp' => '654321',
-            'data' => ['message' => 'LTC OTP sent'],
+            // Realistic shape: the raw code embedded inside a full sentence, as
+            // OtpLoginModal::sendOtp() actually builds the SMS text ("ທ່ານໄດ້ຮັບລະຫັດ:
+            // {otp} ຈາກ ..."). A naive exact-value mask would miss this substring.
+            'data' => ['message' => 'ທ່ານໄດ້ຮັບລະຫັດ: 654321 ຈາກ Gadzila'],
             'created_at' => '2026-07-05 10:00:00',
         ]);
 

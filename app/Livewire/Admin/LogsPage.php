@@ -146,8 +146,13 @@ class LogsPage extends Component
                 ->all();
         }
 
-        if (is_string($value) && $otp !== '' && hash_equals($otp, $value)) {
-            return '***';
+        if (is_string($value) && $otp !== '') {
+            // Substring replace, not exact match: provider payloads commonly embed
+            // the OTP inside a full SMS sentence (e.g. "ທ່ານໄດ້ຮັບລະຫັດ: 123456 ຈາກ ...",
+            // see OtpLoginModal::sendOtp()), so an exact-equality check would miss it.
+            if (str_contains($value, $otp)) {
+                return str_replace($otp, '***', $value);
+            }
         }
 
         return $value;
