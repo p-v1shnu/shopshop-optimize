@@ -32,6 +32,19 @@
 10. มี `phpunit.xml` แต่ **ไม่มีโฟลเดอร์ `tests/`** เลย (ยังไม่มีชุดเทส) — ควรเริ่มวางโครง test เมื่อเริ่มแก้โค้ด
 11. มีเอกสาร/สเปกเดิมจาก outsource dev ไหม (API contract ของ invoice webhook, stock API ฯลฯ) เพื่อ cross-check
 
+## 🐛 บั๊กที่พบในโค้ด outsource dev เดิม (ควรแจ้งกลับตอน merge)
+
+รายการนี้คือบั๊ก/ความไม่สอดคล้องที่พบระหว่างพัฒนา backoffice — **เกิดจากโค้ด baseline เดิม ไม่ใช่จากงานที่เพิ่มเข้าไป** เก็บไว้แจ้ง outsource dev ตอนขอ merge กลับ
+
+1. **`app/Models/Tenant.php` — field `no_shipping_paid_text` ไม่ตรงกับคอลัมน์จริงในฐานข้อมูล** *(พบและแก้แล้วระหว่าง M9, commit `7927eed`)*
+   - `$fillable` และ `getCustomColumns()` มี `no_shipping_paid_text` แต่ตาราง `tenants` ไม่มีคอลัมน์นี้ — คอลัมน์จริงชื่อ `no_shipping_order_paid_text` (migration `0001_create_tenants_table.php`)
+   - **ทำไมอันตราย:** `getCustomColumns()` คือกลไกหลักของ `stancl/virtualcolumn` ที่ตัดสินว่า attribute ไหนเป็นคอลัมน์จริง (เขียนตรง ๆ) หรือไปเก็บใน `tenants.data` (JSON) — ถ้ามีที่ไหนเผลอเซ็ต `$tenant->no_shipping_paid_text = ...` จะพยายาม INSERT/UPDATE คอลัมน์ที่ไม่มีจริง → SQL error ทันที (`Unknown column`)
+   - ตรวจแล้วว่าไม่มีโค้ดเดิมที่ไหนใช้ field นี้จริง (เป็น dead code ที่ไม่เคยถูกเรียก) จึงลบออกอย่างปลอดภัยแล้วในสาขา backoffice — ฝั่ง outsource dev อาจต้องเช็คว่ามีที่อื่นในโค้ดของเขาที่ตั้งใจใช้ field นี้ไหม (ถ้ามี ต้องแก้ให้ชี้ไปคอลัมน์ที่ถูกต้อง)
+
+2. **`HALController::webhookPost()` — order not found แล้วไม่ return** *(พบตอนวางแผน v1.2, แก้ใน H11)*
+   - เมื่อหา order จาก `shipping_tracking_number` ไม่เจอ (`if (!$order)`) โค้ดแค่บันทึก log แล้ว**ไหลต่อ**ไปเรียก `$order->update(...)` บนค่า null → fatal error (`Call to a member function update() on null`) ทุกครั้งที่ HAL ส่ง webhook ของ shipment ที่ไม่อยู่ในระบบ
+   - รวมถึงจุดที่ **การ verify HMAC signature ถูก comment bypass ไว้** (`temporary signature verify bypassed`) — เปิดกลับใน H11 แล้ว ฝั่ง outsource dev ควรรับทราบว่า production เดิมรันแบบไม่ verify
+
 ---
 
 ## งานที่คาดว่าจะทำต่อ (ตามแผนเจ้าของโปรเจค)

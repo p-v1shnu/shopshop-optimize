@@ -10,6 +10,8 @@ Docker stack สำหรับ dev ในเครื่อง (ไฟล์อ
 | mysql | **33066** | ต่อ DB จากภายนอก (เช่น TablePlus) |
 | redis | **63799** | ต่อ Redis |
 | node (vite dev) | **5199** | asset dev server (optional) |
+| minio S3 API | **9110** | object storage (รูปภาพ) |
+| minio console | **9111** | หน้าเว็บจัดการ MinIO (login: `shopshop` / `shopshop-secret`) |
 
 ทุก port bind ที่ `127.0.0.1` เท่านั้น (ไม่เปิดออก network)
 
@@ -86,3 +88,13 @@ docker compose --profile dev up node     # vite dev server ที่ :5199
 
 ## ต่อ DB ด้วย GUI (เช่น TablePlus / DBeaver)
 - Host: `127.0.0.1` · Port: `33066` · User: `shopshop` · Password: `secret` · Database: `shopshop`
+
+## Object storage (รูปภาพ) — MinIO / S3
+- Local dev ใช้ **MinIO** (S3-compatible) — service `minio` + `minio-createbucket` ใน compose สร้าง bucket `shopshop` และตั้ง public read อัตโนมัติ
+- Config: [`config/filesystems.php`](../config/filesystems.php) disk `s3` (สลับด้วย env), ตั้งค่าใน `.env`:
+  - `FILESYSTEM_DISK=s3`, `AWS_ENDPOINT=http://minio:9000` (app→minio ภายใน), `AWS_URL=http://localhost:9110/shopshop` (browser), `AWS_USE_PATH_STYLE_ENDPOINT=true`
+  - creds local: `shopshop` / `shopshop-secret`, bucket `shopshop`
+- **Production = Cloudflare R2**: เปลี่ยนแค่ `AWS_*` (endpoint R2 + `AWS_URL=https://assets.shopshop.la` + key/secret/bucket) — โค้ดไม่ต้องแก้
+- Console: http://localhost:9111 (ดู/จัดการไฟล์)
+- ต้องมี `league/flysystem-aws-s3-v3` (ติดตั้งแล้ว) — S3 driver ของ Laravel
+- **ในเทสให้ใช้ `Storage::fake('s3')`** อย่ายิง MinIO จริง

@@ -3,6 +3,7 @@
 # projects on this machine:
 #   8899  -> web (nginx)      | 33066 -> mysql
 #   63799 -> redis            | 5199  -> vite dev server (optional)
+#   9110  -> minio S3 API     | 9111  -> minio console
 # All ports bind to 127.0.0.1 only (not exposed on the network).
 
 name: shopshop
@@ -26,6 +27,8 @@ services:
       mysql:
         condition: service_healthy
       redis:
+        condition: service_started
+      minio:
         condition: service_started
     networks:
       - shopshop
@@ -77,6 +80,39 @@ services:
     networks:
       - shopshop
 
+  # S3-compatible object storage for local dev (product/banner images).
+  # Mirrors the production Cloudflare R2 API so the same S3 driver code works.
+  minio:
+    image: minio/minio
+    container_name: shopshop-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: shopshop
+      MINIO_ROOT_PASSWORD: shopshop-secret
+    ports:
+      - "127.0.0.1:9110:9000"   # S3 API
+      - "127.0.0.1:9111:9001"   # web console (login: shopshop / shopshop-secret)
+    volumes:
+      - minio-data:/data
+    networks:
+      - shopshop
+
+  # One-shot: create the bucket and make it publicly readable (for serving images).
+  minio-createbucket:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 shopshop shopshop-secret; do echo 'waiting for minio...'; sleep 2; done;
+      mc mb --ignore-existing local/shopshop;
+      mc anonymous set download local/shopshop;
+      echo 'minio bucket ready';
+      "
+    networks:
+      - shopshop
+
   # Optional: Vite dev server for hot-reloading assets during development.
   # Start with:  docker compose --profile dev up node
   # For a one-off production build:  docker compose run --rm node npm run build
@@ -98,6 +134,7 @@ volumes:
   mysql-data:
   vendor:
   node_modules:
+  minio-data:
 
 networks:
   shopshop:

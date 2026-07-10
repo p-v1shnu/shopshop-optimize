@@ -22,9 +22,8 @@
 - **`staff`** ระดับร้าน + สิทธิ์ย่อย (เช่น ดูออเดอร์ได้แต่แก้สินค้าไม่ได้) — ใช้ permission/policy ละเอียด
 - **แอดมิน 1 คนคุมหลายร้าน** — เพิ่มตาราง pivot `admin_tenant` (v1 = 1 คน/1 ร้าน) — *กระทบ schema (เพิ่มตาราง)*
 
-## C. Audit log ของการกระทำในหลังบ้าน
-- บันทึกทุก action สำคัญ (ใครแก้อะไร เมื่อไหร่ ค่าเดิม→ค่าใหม่) โดยเฉพาะ: ปรับสต็อก, เปลี่ยนสถานะออเดอร์, refund, แก้ราคา
-- แนวทาง: ตาราง `admin_activity_logs` กลาง — *กระทบ schema (เพิ่มตาราง)*
+## C. Audit log ของการกระทำในหลังบ้าน → **ยกเข้า scope แล้ว (v1.2 M14 ใน docs/10)**
+- ตาราง `admin_activity_logs` (additive) + หน้า super ดู log — spec เต็มอยู่ใน docs/10
 
 ## D. ภาษา (i18n)
 **v1 ทำแค่:** อังกฤษอย่างเดียว
@@ -41,10 +40,16 @@
 **อนาคต:** สร้าง thumbnail/variant หลายขนาด, validate/บีบอัด, จัดการลบไฟล์เก่าเมื่อเปลี่ยนรูป
 
 ## G. ความปลอดภัย & คุณภาพ
-- **2FA** สำหรับ admin login
+- ~~**Order action idempotency guards**~~ → **ยกเข้า scope แล้ว (v1.2 H11 ใน docs/10)**
+- ~~**Admin self-lockout guard**~~ → **ยกเข้า scope แล้ว (v1.2 H11)**
+- ~~**เปิด HAL webhook signature**~~ → **ยกเข้า scope แล้ว (v1.2 H11)**
+- **2FA** สำหรับ admin login *(ตัดสินใจแล้ว: ยังไม่ทำใน v1.2)*
 - **เปิด verify HMAC signature ของ HAL webhook กลับ** (ตอนนี้ bypass อยู่ — ดู [06-open-questions.md](06-open-questions.md))
 - **เริ่มเขียน test** (ยังไม่มีโฟลเดอร์ `tests/` เลย) — เริ่มจากส่วนที่แตะบ่อย (order, stock, refund)
 - ทบทวน migration ต้นฉบับที่ไม่ portable (เจอแล้ว 1 จุด: boolean default string — แก้ไปแล้ว) เผื่อมีอีก
+
+## G.1 Deprecation ที่เจอ (pre-existing)
+- stancl/tenancy 3.10 บน PHP 8.4 ขึ้น deprecation: *"Accessing static trait property `BelongsToTenant::$tenantIdColumn` is deprecated"* (มาจากทุก model ที่ใช้ trait นี้ เช่น User, ShopProduct — มีมาตั้งแต่ baseline) ควรจัดการตอน upgrade stancl เวอร์ชันถัดไป
 
 ## H. โครงสร้าง tenancy
 - ปัจจุบันเป็น single-database + `tenant_id` column (ไม่ใช่ database-per-tenant) — ถ้าจำนวนร้าน/ข้อมูลโตมาก อาจพิจารณาแยก database ต่อ tenant (stancl รองรับ) แต่เป็นงานใหญ่ ประเมินตอนสเกลจริง

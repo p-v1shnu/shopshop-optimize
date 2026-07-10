@@ -23,7 +23,13 @@ class ShopUtil
             return true;
         }
 
-        return CarbonImmutable::now() >= CarbonImmutable::parse('2030-01-30 18:00:00');
+        $shopClosedAt = tenant('shop_closed_at');
+
+        if (blank($shopClosedAt)) {
+            return false;
+        }
+
+        return CarbonImmutable::now() >= CarbonImmutable::parse($shopClosedAt);
     }
 
     /**
@@ -186,18 +192,18 @@ class ShopUtil
             return config('custom.shop_campaign_code');
         }
 
-        if ($date->between(CarbonImmutable::parse('2025-01-27 00:00:00'), CarbonImmutable::parse('2025-01-31 23:59:59'))) {
-            return self::CHINESE_NEW_YEAR_2025_CAMPAIGN_CODE;
-        }
-        else if ($date->between(CarbonImmutable::parse('2025-04-02 00:00:00'), CarbonImmutable::parse('2025-04-04 23:59:59'))) {
-            return self::LAO_NEW_YEAR_2025_CAMPAIGN_CODE;
-        }
-        else if ($date->between(CarbonImmutable::parse('2025-06-06 00:00:00'), CarbonImmutable::parse('2025-06-07 23:59:59'))) {
-            return self::SIX_JUNE_2025_CAMPAIGN_CODE;
-        }
-        else {
+        $campaignCode = tenant('campaign_code');
+        $campaignStartsAt = tenant('campaign_starts_at');
+        $campaignEndsAt = tenant('campaign_ends_at');
+
+        if (blank($campaignCode) || blank($campaignStartsAt) || blank($campaignEndsAt)) {
             return null;
         }
+
+        return $date->between(
+            CarbonImmutable::parse($campaignStartsAt),
+            CarbonImmutable::parse($campaignEndsAt)
+        ) ? $campaignCode : null;
     }
 
     public static function getHomeUrl(array $parameters = []): string
